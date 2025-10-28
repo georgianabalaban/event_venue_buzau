@@ -14,7 +14,7 @@ interface ServicesProps {
   }
 }
 
-const iconMap: Record<string, any> = {
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   briefcase: Briefcase,
   partypopper: PartyPopper,
   heart: Heart,

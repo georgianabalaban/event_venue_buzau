@@ -8,7 +8,10 @@ interface HeroProps {
     heading?: string
     subheading?: string
     ctaText?: string
-    backgroundImage?: any
+    backgroundImage?: {
+      url: string
+      alt?: string
+    }
   }
 }
 

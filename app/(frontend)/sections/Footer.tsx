@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { Facebook, Instagram, Mail, Phone, MapPin, MessageCircle } from 'lucide-react'
 
 interface FooterProps {
@@ -208,9 +209,9 @@ export default function Footer({ settings }: FooterProps) {
             </p>
             
             <div className="flex gap-6 text-sm">
-              <a href="/admin" className="hover:text-white transition-colors">
+              <Link href="/admin" className="hover:text-white transition-colors">
                 Admin
-              </a>
+              </Link>
               <button className="hover:text-white transition-colors">
                 Politica de confidențialitate
               </button>

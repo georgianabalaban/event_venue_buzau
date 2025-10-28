@@ -1,18 +1,21 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Calendar, MapPin, Users } from 'lucide-react'
+import { Calendar, Users } from 'lucide-react'
 import { formatDate, formatPrice } from '@/lib/utils'
 
 interface Event {
   id: string
   title: string
-  description: any
+  description: string
   date: string
   category: string
   price?: number
   availableSpots?: number
-  image?: any
+  image?: {
+    url: string
+    alt?: string
+  }
 }
 
 interface EventsProps {

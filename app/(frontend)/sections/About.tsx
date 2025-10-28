@@ -6,7 +6,7 @@ import { Check } from 'lucide-react'
 interface AboutProps {
   data?: {
     title?: string
-    description?: any
+    description?: string
     features?: Array<{ feature: string }>
   }
 }

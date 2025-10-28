@@ -18,12 +18,12 @@ import { Testimonials } from './collections/Testimonials'
 import { FAQs } from './collections/FAQs'
 
 export default buildConfig({
+  secret: process.env.PAYLOAD_SECRET || 'your-secret-key',
   serverURL: process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000',
   admin: {
     user: 'users',
     meta: {
       titleSuffix: '- Event Venue Admin',
-      favicon: '/favicon.ico',
     },
   },
   editor: lexicalEditor({}),
