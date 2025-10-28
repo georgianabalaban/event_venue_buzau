@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-inter: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  * {
+    @apply border-gray-200;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    @apply w-full overflow-x-hidden;
+  }
+
+  body {
+    @apply bg-white text-gray-900 w-full min-h-screen overflow-x-hidden;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  .force-bg-white {
+    background-color: #ffffff !important;
+    background-image: none !important;
+  }
+}
