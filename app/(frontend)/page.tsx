@@ -10,71 +10,111 @@ import FAQ from './sections/FAQ'
 import Contact from './sections/Contact'
 import Footer from './sections/Footer'
 
-async function getPageData() {
-  try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_SERVER_URL}/api/pages?where[slug][equals]=home`,
-      {
-        next: { revalidate: 60 },
+// Static data for demo purposes
+const getPageData = () => {
+  return {
+    hero: {
+      heading: "Event Venue Buzău",
+      subheading: "Spațiu perfect pentru evenimente memorabile",
+      ctaText: "Rezervă acum"
+    },
+    about: {
+      title: "Despre noi",
+      description: "Oferim un spațiu elegant și modern pentru evenimente de toate tipurile, cu facilități de top și servicii personalizate.",
+      features: [
+        { feature: 'Spațiu exterior cu piscină' },
+        { feature: 'Sală interioară elegantă' },
+        { feature: 'Capacitate până la 200 persoane' },
+        { feature: 'Parcare privată' },
+        { feature: 'Catering personalizat' }
+      ]
+    },
+    services: {
+      title: "Serviciile noastre",
+      items: [
+        {
+          name: "Evenimente Corporate",
+          description: "Conferințe, training-uri, lansări de produse",
+          icon: "briefcase"
+        },
+        {
+          name: "Nunți",
+          description: "Ceremonii și petreceri de nuntă personalizate",
+          icon: "heart"
+        },
+        {
+          name: "Petreceri Private",
+          description: "Aniversări, zile de naștere, reuniuni de familie",
+          icon: "partypopper"
+        },
+        {
+          name: "Evenimente Speciale",
+          description: "Botezuri, confirmări, evenimente tematice",
+          icon: "sparkles"
+        }
+      ]
+    },
+    contact: {
+      phone: "+40 234 567 890",
+      email: "contact@eventvenue.ro",
+      address: "Strada Exemplu, Nr. 123, Buzău"
+    }
+  }
+}
+
+const getSettings = () => {
+  return {
+    siteName: "Event Venue Buzău",
+    tagline: "Spațiu perfect pentru evenimente memorabile",
+    socialMedia: {
+      facebook: "https://facebook.com/eventvenuebuzau",
+      instagram: "https://instagram.com/eventvenuebuzau",
+      tiktok: "https://tiktok.com/@eventvenuebuzau",
+      whatsapp: "40723456789"
+    },
+    contact: {
+      email: "contact@eventvenue.ro",
+      phone: "+40 234 567 890",
+      address: "Strada Exemplu, Nr. 123, Buzău"
+    }
+  }
+}
+
+const getEvents = () => {
+  return [
+    {
+      id: "1",
+      title: "Workshop de Fotografie",
+      description: "Învață tehnici profesionale de fotografie cu experți în domeniu.",
+      date: "2024-12-15",
+      category: "Workshop",
+      price: 150,
+      availableSpots: 20,
+      image: {
+        url: "/api/placeholder/400/300",
+        alt: "Workshop de Fotografie"
       }
-    )
-
-    if (!res.ok) {
-      return null
-    }
-
-    const data = await res.json()
-    return data.docs?.[0] || null
-  } catch (error) {
-    console.error('Error fetching page data:', error)
-    return null
-  }
-}
-
-async function getSettings() {
-  try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/globals/settings`, {
-      next: { revalidate: 60 },
-    })
-
-    if (!res.ok) {
-      return null
-    }
-
-    return await res.json()
-  } catch (error) {
-    console.error('Error fetching settings:', error)
-    return null
-  }
-}
-
-async function getEvents() {
-  try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_SERVER_URL}/api/events?limit=6&sort=-date`,
-      {
-        next: { revalidate: 60 },
+    },
+    {
+      id: "2", 
+      title: "Petrecere de Anul Nou",
+      description: "Celebrează anul nou într-un mod memorabil cu prietenii și familia.",
+      date: "2024-12-31",
+      category: "Petrecere",
+      price: 200,
+      availableSpots: 100,
+      image: {
+        url: "/api/placeholder/400/300",
+        alt: "Petrecere de Anul Nou"
       }
-    )
-
-    if (!res.ok) {
-      return []
     }
-
-    const data = await res.json()
-    return data.docs || []
-  } catch (error) {
-    console.error('Error fetching events:', error)
-    return []
-  }
+  ]
 }
 
-export default async function Home() {
-  const [pageData, settings, events] = await Promise.all([
-    getPageData(),
-    getSettings(),
-    getEvents(),
-  ])
+export default function Home() {
+  const pageData = getPageData()
+  const settings = getSettings()
+  const events = getEvents()
 
   return (
     <main className="min-h-screen">
