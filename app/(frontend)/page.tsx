@@ -13,228 +13,217 @@ import FAQ from './sections/FAQ'
 import Contact from './sections/Contact'
 import Footer from './sections/Footer'
 
-// Funcție pentru a citi datele din localStorage (client-side)
-const getPageData = () => {
-  if (typeof window !== 'undefined') {
-    // Prioritizează sessionStorage pentru actualizări imediate
-    const sessionData = sessionStorage.getItem('siteData')
-    const localData = localStorage.getItem('siteData')
-    const savedData = sessionData || localData
-    
-    console.log('Getting page data:', { 
-      sessionData: !!sessionData, 
-      localData: !!localData,
-      sessionContent: sessionData?.substring(0, 100),
-      localContent: localData?.substring(0, 100)
-    })
-    
-    if (savedData) {
-      try {
-        const data = JSON.parse(savedData)
-        console.log('Parsed data hero:', data.hero)
-        return {
-          hero: data.hero || {
-            heading: "Event Venue Buzău",
-            subheading: "Spațiu perfect pentru evenimente memorabile",
-            ctaText: "Rezervă acum"
-          },
-          about: {
-            title: data.about?.title || "Despre noi",
-            description: data.about?.description || "Oferim un spațiu elegant și modern pentru evenimente de toate tipurile, cu facilități de top și servicii personalizate.",
-            features: (data.about?.features || [
-              'Spațiu exterior cu piscină',
-              'Sală interioară elegantă',
-              'Capacitate până la 200 persoane',
-              'Parcare privată',
-              'Catering personalizat'
-            ]).map((f: string) => ({ feature: f }))
-          },
-          services: data.services || {
-            title: "Serviciile noastre",
-            items: [
-              {
-                name: "Evenimente Corporate",
-                description: "Conferințe, training-uri, lansări de produse",
-                icon: "briefcase"
-              },
-              {
-                name: "Nunți",
-                description: "Ceremonii și petreceri de nuntă personalizate",
-                icon: "heart"
-              },
-              {
-                name: "Petreceri Private",
-                description: "Aniversări, zile de naștere, reuniuni de familie",
-                icon: "partypopper"
-              },
-              {
-                name: "Evenimente Speciale",
-                description: "Botezuri, confirmări, evenimente tematice",
-                icon: "sparkles"
-              }
-            ]
-          },
-          contact: {
-            phone: "+40 234 567 890",
-            email: "contact@eventvenue.ro",
-            address: "Strada Exemplu, Nr. 123, Buzău"
-          }
-        }
-      } catch (error) {
-        console.error('Error parsing saved data:', error)
+// Default data structure
+const defaultPageData = {
+  hero: {
+    heading: 'Bun venit la Event Venue Buzău',
+    secondaryHeading: 'prind viață',
+    subheading: 'Spațiul perfect pentru evenimentele tale de neuitat',
+    ctaText: 'Rezervă Acum',
+    backgroundImage: '/hero-bg.jpg'
+  },
+  about: {
+    title: 'Despre Noi',
+    description: 'Event Venue Buzău este locul perfect pentru a-ți organiza evenimentul de vis. Cu o capacitate de până la 200 de persoane, oferim un spațiu elegant și modern, perfect pentru nunti, botezuri, aniversări și alte evenimente speciale.',
+    features: [
+      'Capacitate până la 200 de persoane',
+      'Spațiu elegant și modern',
+      'Meniu personalizat',
+      'Servicii complete de evenimente'
+    ]
+  },
+  services: {
+    title: 'Serviciile Noastre',
+    items: [
+      {
+        name: 'Organizare Evenimente',
+        description: 'Planificare completă și organizare profesională',
+        icon: 'Calendar'
+      },
+      {
+        name: 'Meniu Personalizat',
+        description: 'Bucătărie proprie cu meniu adaptat nevoilor tale',
+        icon: 'Utensils'
+      },
+      {
+        name: 'Decor și Flori',
+        description: 'Decor personalizat și aranjamente florale',
+        icon: 'Flower'
+      },
+      {
+        name: 'Fotograf și Video',
+        description: 'Servicii profesionale de fotograf și video',
+        icon: 'Camera'
       }
-    }
-  }
-  
-  // Date default dacă nu există date salvate
-  return {
-    hero: {
-      heading: "Event Venue Buzău",
-      subheading: "Spațiu perfect pentru evenimente memorabile",
-      ctaText: "Rezervă acum"
-    },
-    about: {
-      title: "Despre noi",
-      description: "Oferim un spațiu elegant și modern pentru evenimente de toate tipurile, cu facilități de top și servicii personalizate.",
-      features: [
-        { feature: 'Spațiu exterior cu piscină' },
-        { feature: 'Sală interioară elegantă' },
-        { feature: 'Capacitate până la 200 persoane' },
-        { feature: 'Parcare privată' },
-        { feature: 'Catering personalizat' }
-      ]
-    },
-    services: {
-      title: "Serviciile noastre",
-      items: [
-        {
-          name: "Evenimente Corporate",
-          description: "Conferințe, training-uri, lansări de produse",
-          icon: "briefcase"
-        },
-        {
-          name: "Nunți",
-          description: "Ceremonii și petreceri de nuntă personalizate",
-          icon: "heart"
-        },
-        {
-          name: "Petreceri Private",
-          description: "Aniversări, zile de naștere, reuniuni de familie",
-          icon: "partypopper"
-        },
-        {
-          name: "Evenimente Speciale",
-          description: "Botezuri, confirmări, evenimente tematice",
-          icon: "sparkles"
-        }
-      ]
-    },
-    contact: {
-      phone: "+40 234 567 890",
-      email: "contact@eventvenue.ro",
-      address: "Strada Exemplu, Nr. 123, Buzău"
-    }
+    ]
+  },
+  contact: {
+    title: 'Contactează-ne',
+    phone: '+40 123 456 789',
+    email: 'contact@eventvenuebuzau.ro',
+    address: 'Strada Exemplu, Nr. 123, Buzău, România'
   }
 }
 
-const getSettings = () => {
-  return {
-    siteName: "Event Venue Buzău",
-    tagline: "Spațiu perfect pentru evenimente memorabile",
-    socialMedia: {
-      facebook: "https://facebook.com/eventvenuebuzau",
-      instagram: "https://instagram.com/eventvenuebuzau",
-      tiktok: "https://tiktok.com/@eventvenuebuzau",
-      whatsapp: "40723456789"
-    },
-    contact: {
-      email: "contact@eventvenue.ro",
-      phone: "+40 234 567 890",
-      address: "Strada Exemplu, Nr. 123, Buzău"
-    }
+const defaultSettings = {
+  siteName: 'Event Venue Buzău',
+  tagline: 'Spațiul tău pentru evenimente perfecte',
+  socialMedia: {
+    facebook: 'https://facebook.com/eventvenuebuzau',
+    instagram: 'https://instagram.com/eventvenuebuzau',
+    whatsapp: '+40123456789',
+    tiktok: 'https://tiktok.com/@eventvenuebuzau'
+  },
+  contact: {
+    email: 'contact@eventvenuebuzau.ro',
+    phone: '+40 123 456 789',
+    address: 'Strada Exemplu, Nr. 123, Buzău, România'
   }
 }
 
-const getEvents = () => {
-  return [
-    {
-      id: "1",
-      title: "Workshop de Fotografie",
-      description: "Învață tehnici profesionale de fotografie cu experți în domeniu.",
-      date: "2024-12-15",
-      category: "Workshop",
-      price: 150,
-      availableSpots: 20,
-      image: {
-        url: "/api/placeholder/400/300",
-        alt: "Workshop de Fotografie"
-      }
-    },
-    {
-      id: "2", 
-      title: "Petrecere de Anul Nou",
-      description: "Celebrează anul nou într-un mod memorabil cu prietenii și familia.",
-      date: "2024-12-31",
-      category: "Petrecere",
-      price: 200,
-      availableSpots: 100,
-      image: {
-        url: "/api/placeholder/400/300",
-        alt: "Petrecere de Anul Nou"
-      }
+const defaultEvents = [
+  {
+    id: 1,
+    title: 'Nunta Ana & Mihai',
+    date: '2024-06-15',
+    description: 'O nuntă de vis în spațiul nostru elegant',
+    image: '/events/nunta-ana-mihai.jpg'
+  },
+  {
+    id: 2,
+    title: 'Botez Maria',
+    date: '2024-07-20',
+    description: 'Botezul frumoasei Maria',
+    image: '/events/botez-maria.jpg'
+  }
+]
+
+// Function to fetch data from API
+const fetchPageData = async () => {
+  try {
+    const response = await fetch('/api/pages', { cache: 'no-store' })
+    if (response.ok) {
+      const data = await response.json()
+      console.log('📡 [PAGE] Fetched page data from API:', data)
+      return data || defaultPageData
     }
-  ]
+  } catch (error) {
+    console.error('❌ [PAGE] Error fetching page data:', error)
+  }
+  return defaultPageData
+}
+
+const fetchSettings = async () => {
+  try {
+    const response = await fetch('/api/settings', { cache: 'no-store' })
+    if (response.ok) {
+      const data = await response.json()
+      console.log('📡 [PAGE] Fetched settings from API:', data)
+      return data || defaultSettings
+    }
+  } catch (error) {
+    console.error('❌ [PAGE] Error fetching settings:', error)
+  }
+  return defaultSettings
+}
+
+const fetchEvents = async () => {
+  try {
+    const response = await fetch('/api/events', { cache: 'no-store' })
+    if (response.ok) {
+      const data = await response.json()
+      console.log('📡 [PAGE] Fetched events from API:', data)
+      return data || defaultEvents
+    }
+  } catch (error) {
+    console.error('❌ [PAGE] Error fetching events:', error)
+  }
+  return defaultEvents
 }
 
 export default function Home() {
-  const [pageData, setPageData] = useState(() => {
-    console.log('Initial page data:', getPageData())
-    return getPageData()
-  })
-  const settings = getSettings()
-  const events = getEvents()
+  const [pageData, setPageData] = useState(defaultPageData)
+  const [settings, setSettings] = useState(defaultSettings)
+  const [events, setEvents] = useState(defaultEvents)
+  const [loading, setLoading] = useState(true)
 
-  // Ascultă pentru modificări în localStorage
   useEffect(() => {
-    const handleStorageChange = () => {
-      console.log('Storage changed, updating page data...')
-      setPageData(getPageData())
-    }
-
-    // Verifică modificările în sessionStorage (același tab)
-    const interval = setInterval(() => {
-      const newData = getPageData()
-      setPageData(prevData => {
-        if (JSON.stringify(prevData) !== JSON.stringify(newData)) {
-          console.log('Page data updated from storage')
-          return newData
-        }
-        return prevData
-      })
-    }, 500) // Verifică mai des
-
-    // Ascultă pentru evenimente de storage (tab-uri diferite)
-    window.addEventListener('storage', handleStorageChange)
+    console.log('🚀 [PAGE] Component mounted, loading data from API...')
     
-    // Ascultă pentru evenimente custom de la admin
-    window.addEventListener('adminDataSaved', handleStorageChange)
-    
-    // Ascultă pentru mesaje de la alte tab-uri
-    const handleMessage = (event: MessageEvent) => {
-      if (event.data?.type === 'adminDataSaved') {
-        console.log('Received admin data from another tab')
-        setPageData(getPageData())
+    const loadData = async () => {
+      try {
+        const [pageDataResult, settingsResult, eventsResult] = await Promise.all([
+          fetchPageData(),
+          fetchSettings(),
+          fetchEvents()
+        ])
+        
+        setPageData(pageDataResult)
+        setSettings(settingsResult)
+        setEvents(eventsResult)
+        setLoading(false)
+        console.log('✅ [PAGE] Data loaded successfully')
+      } catch (error) {
+        console.error('❌ [PAGE] Error loading data:', error)
+        setLoading(false)
       }
     }
+
+    loadData()
+
+    // Listen for custom admin data saved event
+    const handleAdminDataSaved = async () => {
+      console.log('🎉 [PAGE] Admin data saved event received, reloading data...')
+      const [pageDataResult, settingsResult, eventsResult] = await Promise.all([
+        fetchPageData(),
+        fetchSettings(),
+        fetchEvents()
+      ])
+      
+      setPageData(pageDataResult)
+      setSettings(settingsResult)
+      setEvents(eventsResult)
+    }
+
+    // Listen for cross-tab messages
+    const handleMessage = async (e: MessageEvent) => {
+      console.log('📨 [PAGE] Message received:', e.data)
+      if (e.data?.type === 'adminDataSaved') {
+        console.log('🎉 [PAGE] Admin data saved message received, reloading data...')
+        const [pageDataResult, settingsResult, eventsResult] = await Promise.all([
+          fetchPageData(),
+          fetchSettings(),
+          fetchEvents()
+        ])
+        
+        setPageData(pageDataResult)
+        setSettings(settingsResult)
+        setEvents(eventsResult)
+      }
+    }
+
+    // Add event listeners
+    window.addEventListener('adminDataSaved', handleAdminDataSaved)
     window.addEventListener('message', handleMessage)
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange)
-      window.removeEventListener('adminDataSaved', handleStorageChange)
+      window.removeEventListener('adminDataSaved', handleAdminDataSaved)
       window.removeEventListener('message', handleMessage)
-      clearInterval(interval)
     }
   }, [])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Se încarcă...</p>
+        </div>
+      </div>
+    )
+  }
+
+  console.log('🎨 [PAGE] Rendering with data:', { pageData, settings, events })
 
   return (
     <main className="min-h-screen">

@@ -11,6 +11,8 @@
     "payload": "cross-env PAYLOAD_CONFIG_PATH=payload.config.ts payload"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.490.0",
+    "@aws-sdk/s3-request-presigner": "^3.490.0",
     "@hookform/resolvers": "^5.2.2",
     "@payloadcms/db-mongodb": "^3.59.1",
     "@payloadcms/next": "^3.59.1",

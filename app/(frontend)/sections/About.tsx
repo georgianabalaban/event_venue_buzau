@@ -6,7 +6,7 @@ import { Check } from 'lucide-react'
 interface AboutProps {
   data?: {
     title?: string
-    description?: string
+    description?: string | any
     features?: Array<{ feature: string }>
   }
 }
@@ -35,17 +35,23 @@ export default function About({ data }: AboutProps) {
               {data?.title || 'Despre spațiul nostru'}
             </h2>
             
-            <div className="prose prose-lg text-gray-600 mb-8">
-              <p>
-                Situat într-o locație pitorească lângă Buzău, spațiul nostru oferă 
-                ambianta perfectă pentru orice tip de eveniment. Cu un design modern 
-                și facilități de top, garantăm că evenimentul tău va fi unul de neuitat.
-              </p>
-              <p>
-                Fie că organizezi un eveniment corporate, o nuntă de vis, o petrecere 
-                privată sau orice altă celebrare, avem experiența și spațiul potrivit 
-                pentru tine.
-              </p>
+            <div className="prose prose-lg text-gray-600 mb-8 whitespace-pre-line">
+              {typeof data?.description === 'string' && data.description.trim().length > 0 ? (
+                <p>{data.description}</p>
+              ) : (
+                <>
+                  <p>
+                    Situat într-o locație pitorească lângă Buzău, spațiul nostru oferă
+                    ambianta perfectă pentru orice tip de eveniment. Cu un design modern
+                    și facilități de top, garantăm că evenimentul tău va fi unul de neuitat.
+                  </p>
+                  <p>
+                    Fie că organizezi un eveniment corporate, o nuntă de vis, o petrecere
+                    privată sau orice altă celebrare, avem experiența și spațiul potrivit
+                    pentru tine.
+                  </p>
+                </>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -23,7 +23,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 }
 
 export default function Services({ data }: ServicesProps) {
-  const services = data?.items || [
+  const defaultItems = [
     {
       name: 'Evenimente Corporate',
       description: 'Conferințe, team building, lansări de produse și alte evenimente profesionale.',
@@ -45,6 +45,10 @@ export default function Services({ data }: ServicesProps) {
       icon: 'cake',
     },
   ]
+
+  const services = (Array.isArray(data?.items) && data!.items!.length > 0)
+    ? data!.items!
+    : defaultItems
 
   return (
     <section id="services" className="py-24 bg-white">

@@ -8,32 +8,17 @@ export const Gallery: CollectionConfig = {
   access: {
     read: () => true,
   },
-  upload: {
-    staticDir: 'public/media',
-    mimeTypes: ['image/*'],
-    imageSizes: [
-      {
-        name: 'thumbnail',
-        width: 400,
-        height: 300,
-        position: 'centre',
-      },
-      {
-        name: 'card',
-        width: 768,
-        height: 1024,
-        position: 'centre',
-      },
-      {
-        name: 'tablet',
-        width: 1024,
-        height: undefined,
-        position: 'centre',
-      },
-    ],
-    adminThumbnail: 'thumbnail',
-  },
   fields: [
+    {
+      name: 'order',
+      type: 'number',
+      label: 'Ordine',
+      admin: {
+        position: 'sidebar',
+        description: 'Folosită pentru ordonare manuală în galerie',
+      },
+      defaultValue: 0,
+    },
     {
       name: 'title',
       type: 'text',
@@ -44,6 +29,14 @@ export const Gallery: CollectionConfig = {
       type: 'text',
       label: 'Text alternativ',
       required: true,
+    },
+    {
+      name: 'externalUrl',
+      type: 'text',
+      label: 'URL extern (opțional)',
+      admin: {
+        description: 'Dacă imaginea este găzduită extern, specifică URL-ul aici. Suprascrie fișierul uploadat.',
+      },
     },
     {
       name: 'category',

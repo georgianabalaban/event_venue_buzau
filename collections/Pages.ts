@@ -37,6 +37,12 @@ export const Pages: CollectionConfig = {
           label: 'Titlu Principal',
         },
         {
+          name: 'secondaryHeading',
+          type: 'text',
+          label: 'Titlu Secundar',
+          defaultValue: 'prind viață',
+        },
+        {
           name: 'subheading',
           type: 'textarea',
           label: 'Subtitlu',

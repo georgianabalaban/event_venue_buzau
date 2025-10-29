@@ -1,7 +1,8 @@
 'use client'
 
-import { motion } from 'framer-motion'
-import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useEffect, useMemo, useState } from 'react'
+import { X, ChevronLeft, ChevronRight, ZoomIn } from 'lucide-react'
 
 const categories = [
   { id: 'all', label: 'Toate' },
@@ -13,21 +14,81 @@ const categories = [
 
 export default function Gallery() {
   const [selectedCategory, setSelectedCategory] = useState('all')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [grouped, setGrouped] = useState<Record<string, any[]>>({
+    indoor: [],
+    outdoor: [],
+    pool: [],
+    events: [],
+  })
+  const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
 
-  // Placeholder images - replace with actual gallery data from Payload
-  const images = [
-    { id: 1, category: 'indoor', alt: 'Sală interioară' },
-    { id: 2, category: 'outdoor', alt: 'Spațiu exterior' },
-    { id: 3, category: 'pool', alt: 'Piscină' },
-    { id: 4, category: 'events', alt: 'Eveniment' },
-    { id: 5, category: 'indoor', alt: 'Sală interioară 2' },
-    { id: 6, category: 'outdoor', alt: 'Grădină' },
-  ]
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        const res = await fetch('/api/gallery?category=all', { cache: 'no-store' })
+        if (!res.ok) throw new Error('Failed to load gallery')
+        const data = await res.json()
+        setGrouped({
+          indoor: data.indoor || [],
+          outdoor: data.outdoor || [],
+          pool: data.pool || [],
+          events: data.events || [],
+        })
+      } catch (e) {
+        setError('Nu s-a putut încărca galeria.')
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [])
 
-  const filteredImages =
-    selectedCategory === 'all'
-      ? images
-      : images.filter((img) => img.category === selectedCategory)
+  const images = useMemo(() => {
+    const all = [
+      ...grouped.indoor,
+      ...grouped.outdoor,
+      ...grouped.pool,
+      ...grouped.events,
+    ]
+    if (selectedCategory === 'all') return all
+    return grouped[selectedCategory] || []
+  }, [grouped, selectedCategory])
+
+  const openLightbox = (index: number) => {
+    setCurrentImageIndex(index)
+    setLightboxOpen(true)
+  }
+
+  const closeLightbox = () => {
+    setLightboxOpen(false)
+  }
+
+  const nextImage = () => {
+    setCurrentImageIndex((prev) => (prev + 1) % images.length)
+  }
+
+  const prevImage = () => {
+    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length)
+  }
+
+  // Keyboard navigation
+  useEffect(() => {
+    if (!lightboxOpen) return
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeLightbox()
+      if (e.key === 'ArrowRight') nextImage()
+      if (e.key === 'ArrowLeft') prevImage()
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [lightboxOpen])
 
   return (
     <section id="gallery" className="py-24 bg-gradient-to-b from-blue-50 to-white">
@@ -70,30 +131,139 @@ export default function Gallery() {
           ))}
         </motion.div>
 
-        {/* Gallery grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredImages.map((image, index) => (
+        {/* Gallery grid - Masonry style */}
+        <div className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6">
+          {loading && Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="break-inside-avoid">
+              <div className={`rounded-2xl bg-gray-200 animate-pulse ${
+                i % 3 === 0 ? 'h-64' : i % 3 === 1 ? 'h-80' : 'h-72'
+              }`} />
+            </div>
+          ))}
+          {!loading && images.map((image: any, index: number) => (
             <motion.div
-              key={image.id}
-              initial={{ opacity: 0, scale: 0.9 }}
-              whileInView={{ opacity: 1, scale: 1 }}
+              key={image.id || index}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1, duration: 0.5 }}
               viewport={{ once: true }}
-              className="group relative aspect-[4/3] rounded-2xl overflow-hidden cursor-pointer hover:scale-105 transition-transform duration-300"
+              className="break-inside-avoid group relative rounded-2xl overflow-hidden cursor-pointer hover:scale-[1.02] transition-all duration-300 shadow-lg hover:shadow-2xl"
+              onClick={() => openLightbox(index)}
             >
-              {/* Placeholder gradient - Replace with actual images */}
-              <div className="absolute inset-0 bg-gradient-to-br from-primary-400 via-secondary-400 to-accent-400" />
-              
-              {/* Overlay - always visible, gets darker on hover */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent group-hover:from-black/80 group-hover:via-black/30 transition-all duration-300" />
-              
-              {/* Image info - always visible */}
-              <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-                <p className="font-bold text-lg drop-shadow-lg">{image.alt}</p>
+              {/* Image with random height for masonry effect */}
+              <div className={`relative ${
+                index % 4 === 0 ? 'h-64' : 
+                index % 4 === 1 ? 'h-80' : 
+                index % 4 === 2 ? 'h-72' : 'h-60'
+              }`}>
+                {image?.externalUrl || image?.url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={image.externalUrl || image.url}
+                    alt={image.alt || image.title || 'Imagine'}
+                    className="absolute inset-0 w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400" />
+                )}
+                
+                {/* Hover overlay with zoom icon */}
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-300 flex items-center justify-center">
+                  <ZoomIn className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                </div>
               </div>
             </motion.div>
           ))}
         </div>
+
+        {/* Lightbox Modal */}
+        <AnimatePresence>
+          {lightboxOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/95 backdrop-blur-sm flex items-center justify-center p-4"
+              onClick={closeLightbox}
+            >
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                className="relative max-w-7xl max-h-[90vh] w-full"
+                onClick={(e) => {
+                  // Only stop propagation if clicking on interactive elements
+                  const target = e.target as HTMLElement
+                  const isButton = target.closest('button')
+                  const isImage = target.tagName === 'IMG'
+                  
+                  // If clicking on image or buttons, stop propagation
+                  if (isButton || isImage) {
+                    e.stopPropagation()
+                  }
+                  // If clicking on empty space in the container, let it bubble up to close
+                }}
+              >
+                {/* Close button */}
+                <button
+                  onClick={closeLightbox}
+                  className="absolute top-3 right-3 z-10 p-2 text-white hover:text-gray-300 transition-colors bg-black/50 rounded-full"
+                  aria-label="Închide imaginea"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+
+                {/* Navigation buttons */}
+                {images.length > 1 && (
+                  <>
+                    <button
+                      onClick={prevImage}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-3 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors"
+                    >
+                      <ChevronLeft className="w-6 h-6" />
+                    </button>
+                    <button
+                      onClick={nextImage}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-3 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors"
+                    >
+                      <ChevronRight className="w-6 h-6" />
+                    </button>
+                  </>
+                )}
+
+                {/* Main image */}
+                <div className="relative w-full h-full flex items-center justify-center">
+                  {images[currentImageIndex]?.externalUrl || images[currentImageIndex]?.url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={images[currentImageIndex].externalUrl || images[currentImageIndex].url}
+                      alt={images[currentImageIndex].alt || images[currentImageIndex].title || 'Imagine'}
+                      className="max-w-[90vw] max-h-[90vh] w-auto h-auto object-contain rounded-lg"
+                      style={{
+                        maxWidth: '90vw',
+                        maxHeight: '90vh',
+                        width: 'auto',
+                        height: 'auto'
+                      }}
+                    />
+                  ) : (
+                    <div className="w-96 h-96 bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400 rounded-lg" />
+                  )}
+                </div>
+
+                {/* Image counter only */}
+                {images.length > 1 && (
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 backdrop-blur-sm rounded-full px-4 py-2 text-white">
+                    <p className="text-sm font-medium">
+                      {currentImageIndex + 1} din {images.length}
+                    </p>
+                  </div>
+                )}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </section>
   )
