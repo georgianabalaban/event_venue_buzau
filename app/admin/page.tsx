@@ -158,7 +158,9 @@ export default function AdminPanel() {
               title: data?.about?.title ?? defaultData.about.title,
               description: typeof data?.about?.description === 'string' ? data.about.description : defaultData.about.description,
               features: Array.isArray(data?.about?.features)
-                ? data.about.features.map((f: any) => (typeof f === 'string' ? f : f?.feature)).filter(Boolean)
+                ? data.about.features
+                    .map((f: string | { feature?: string }) => (typeof f === 'string' ? f : f?.feature))
+                    .filter((v: unknown): v is string => typeof v === 'string' && v.length > 0)
                 : defaultData.about.features,
             },
             services: {
@@ -171,7 +173,9 @@ export default function AdminPanel() {
             gallery: defaultData.gallery,
           })
           const incomingFeatures: string[] = Array.isArray(data?.about?.features)
-            ? data.about.features.map((f: any) => (typeof f === 'string' ? f : f?.feature)).filter((v: any) => typeof v === 'string')
+            ? data.about.features
+                .map((f: string | { feature?: string }) => (typeof f === 'string' ? f : f?.feature))
+                .filter((v: unknown): v is string => typeof v === 'string')
             : defaultData.about.features
           setFeaturesText(incomingFeatures.join('\n'))
         }
@@ -503,9 +507,19 @@ export default function AdminPanel() {
   )
 }
 
+type GalleryItem = {
+  id: string
+  externalUrl?: string
+  url?: string
+  alt?: string
+  title?: string
+  order?: number
+  [key: string]: unknown
+}
+
 function GalleryManager() {
   const [category, setCategory] = useState<'indoor' | 'outdoor' | 'pool' | 'events'>('indoor')
-  const [items, setItems] = useState<Record<string, any[]>>({ indoor: [], outdoor: [], pool: [], events: [] })
+  const [items, setItems] = useState<Record<'indoor'|'outdoor'|'pool'|'events', GalleryItem[]>>({ indoor: [], outdoor: [], pool: [], events: [] })
   const [loading, setLoading] = useState(true)
   const [dragActive, setDragActive] = useState(false)
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
@@ -553,7 +567,7 @@ function GalleryManager() {
     }
   }
 
-  const categories = [
+  const categories: Array<{ id: 'indoor'|'outdoor'|'pool'|'events'; label: string }> = [
     { id: 'indoor', label: 'Interior' },
     { id: 'outdoor', label: 'Exterior' },
     { id: 'pool', label: 'Piscină' },
@@ -568,7 +582,7 @@ function GalleryManager() {
           {categories.map((c) => (
             <button
               key={c.id}
-              onClick={() => setCategory(c.id as any)}
+              onClick={() => setCategory(c.id)}
               className={`px-4 py-2 rounded-md text-sm font-medium ${category === c.id ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
             >
               {c.label}
@@ -631,7 +645,7 @@ function GalleryManager() {
             await fetch('/api/gallery/reorder', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ orderedIds: ordered.map((x: any) => x.id) }),
+              body: JSON.stringify({ orderedIds: ordered.map((x: GalleryItem) => x.id) }),
             })
           }}
         />
@@ -640,9 +654,9 @@ function GalleryManager() {
   )
 }
 
-function ReorderableGrid({ items, onDelete, onReorder }: { items: any[]; onDelete: (id: string) => void | Promise<void>; onReorder: (items: any[]) => void | Promise<void> }) {
+function ReorderableGrid({ items, onDelete, onReorder }: { items: GalleryItem[]; onDelete: (id: string) => void | Promise<void>; onReorder: (items: GalleryItem[]) => void | Promise<void> }) {
   const [dragIdx, setDragIdx] = useState<number | null>(null)
-  const [list, setList] = useState(items)
+  const [list, setList] = useState<GalleryItem[]>(items)
 
   useEffect(() => setList(items), [items])
 
@@ -663,7 +677,7 @@ function ReorderableGrid({ items, onDelete, onReorder }: { items: any[]; onDelet
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-      {list.map((img: any, idx: number) => (
+      {list.map((img: GalleryItem, idx: number) => (
         <div
           key={img.id}
           draggable

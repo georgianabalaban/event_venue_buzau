@@ -6,9 +6,9 @@ export async function GET(request: NextRequest) {
   try {
     const payload = await getPayload({ config })
     const { searchParams } = new URL(request.url)
-    const category = searchParams.get('category') as 'indoor' | 'outdoor' | 'pool' | 'events' | null
+    const category = searchParams.get('category')
 
-    const query: Record<string, unknown> = {
+    const query: Parameters<typeof payload.find>[0] = {
       collection: 'gallery',
       limit: 100,
       sort: 'order',

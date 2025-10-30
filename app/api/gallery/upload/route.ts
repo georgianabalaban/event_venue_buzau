@@ -18,8 +18,7 @@ export async function POST(request: NextRequest) {
         details: { 
           fileType: typeof file,
           fileInstance: file instanceof File,
-          fileSize: file instanceof File ? file.size : 'not a file',
-          formSize: form.size
+          fileSize: file instanceof File ? file.size : 'not a file'
         } 
       }, { status: 400 })
     }

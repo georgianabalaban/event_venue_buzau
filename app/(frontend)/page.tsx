@@ -20,16 +20,16 @@ const defaultPageData = {
     secondaryHeading: 'prind viață',
     subheading: 'Spațiul perfect pentru evenimentele tale de neuitat',
     ctaText: 'Rezervă Acum',
-    backgroundImage: '/hero-bg.jpg'
+    backgroundImage: { url: '/hero-bg.jpg', alt: 'Hero background' }
   },
   about: {
     title: 'Despre Noi',
     description: 'Event Venue Buzău este locul perfect pentru a-ți organiza evenimentul de vis. Cu o capacitate de până la 200 de persoane, oferim un spațiu elegant și modern, perfect pentru nunti, botezuri, aniversări și alte evenimente speciale.',
     features: [
-      'Capacitate până la 200 de persoane',
-      'Spațiu elegant și modern',
-      'Meniu personalizat',
-      'Servicii complete de evenimente'
+      { feature: 'Capacitate până la 200 de persoane' },
+      { feature: 'Spațiu elegant și modern' },
+      { feature: 'Meniu personalizat' },
+      { feature: 'Servicii complete de evenimente' }
     ]
   },
   services: {
@@ -83,18 +83,22 @@ const defaultSettings = {
 
 const defaultEvents = [
   {
-    id: 1,
+    id: '1',
     title: 'Nunta Ana & Mihai',
     date: '2024-06-15',
     description: 'O nuntă de vis în spațiul nostru elegant',
-    image: '/events/nunta-ana-mihai.jpg'
+    category: 'wedding',
+    price: 0,
+    availableSpots: 0
   },
   {
-    id: 2,
+    id: '2',
     title: 'Botez Maria',
     date: '2024-07-20',
     description: 'Botezul frumoasei Maria',
-    image: '/events/botez-maria.jpg'
+    category: 'other',
+    price: 0,
+    availableSpots: 0
   }
 ]
 

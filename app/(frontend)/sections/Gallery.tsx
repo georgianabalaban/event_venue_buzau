@@ -1,7 +1,7 @@
 'use client'
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { X, ChevronLeft, ChevronRight, ZoomIn } from 'lucide-react'
 
 const categories = [
@@ -12,11 +12,19 @@ const categories = [
   { id: 'events', label: 'Evenimente' },
 ]
 
+type GalleryImage = {
+  id?: string
+  externalUrl?: string
+  url?: string
+  alt?: string
+  title?: string
+  [key: string]: unknown
+}
+
 export default function Gallery() {
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [grouped, setGrouped] = useState<Record<string, any[]>>({
+  const [grouped, setGrouped] = useState<Record<string, GalleryImage[]>>({
     indoor: [],
     outdoor: [],
     pool: [],
@@ -28,7 +36,6 @@ export default function Gallery() {
   useEffect(() => {
     const load = async () => {
       setLoading(true)
-      setError(null)
       try {
         const res = await fetch('/api/gallery?category=all', { cache: 'no-store' })
         if (!res.ok) throw new Error('Failed to load gallery')
@@ -39,8 +46,8 @@ export default function Gallery() {
           pool: data.pool || [],
           events: data.events || [],
         })
-      } catch (e) {
-        setError('Nu s-a putut încărca galeria.')
+      } catch {
+        // silent fail, UI shows skeletons on error then empty state
       } finally {
         setLoading(false)
       }
@@ -64,17 +71,17 @@ export default function Gallery() {
     setLightboxOpen(true)
   }
 
-  const closeLightbox = () => {
+  const closeLightbox = useCallback(() => {
     setLightboxOpen(false)
-  }
+  }, [])
 
-  const nextImage = () => {
+  const nextImage = useCallback(() => {
     setCurrentImageIndex((prev) => (prev + 1) % images.length)
-  }
+  }, [images.length])
 
-  const prevImage = () => {
+  const prevImage = useCallback(() => {
     setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length)
-  }
+  }, [images.length])
 
   // Keyboard navigation
   useEffect(() => {
@@ -88,7 +95,7 @@ export default function Gallery() {
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [lightboxOpen])
+  }, [lightboxOpen, nextImage, prevImage, closeLightbox])
 
   return (
     <section id="gallery" className="py-24 bg-gradient-to-b from-blue-50 to-white">
@@ -140,7 +147,7 @@ export default function Gallery() {
               }`} />
             </div>
           ))}
-          {!loading && images.map((image: any, index: number) => (
+          {!loading && images.map((image: GalleryImage, index: number) => (
             <motion.div
               key={image.id || index}
               initial={{ opacity: 0, y: 20 }}

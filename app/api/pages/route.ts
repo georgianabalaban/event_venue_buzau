@@ -73,7 +73,6 @@ export async function GET() {
       if (Array.isArray(node)) return node.map(toPlainText).join(' ')
       if (typeof node === 'string') return node
       if (typeof node === 'object' && node !== null) {
-        // @ts-ignore
         const n = node as { text?: string; children?: unknown[] }
         const text = n.text || ''
         const children = Array.isArray(n.children) ? n.children.map(toPlainText).join(' ') : ''
@@ -83,17 +82,19 @@ export async function GET() {
     }
 
     const descriptionValue = (() => {
-      // @ts-expect-error
+      // @ts-expect-error accessing nested rich-text structure from Payload, can be string or node tree
       const v = doc?.about?.description
       if (!v) return undefined
       if (typeof v === 'string') return v
       return toPlainText(v).trim()
     })()
 
+    const docObj = doc as Record<string, unknown>
+    const aboutObj = (docObj.about as Record<string, unknown>) || {}
     return NextResponse.json({
-      ...doc,
+      ...docObj,
       about: {
-        ...doc?.about,
+        ...aboutObj,
         description: descriptionValue,
       },
     })
