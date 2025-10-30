@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const category = searchParams.get('category') as 'indoor' | 'outdoor' | 'pool' | 'events' | null
 
-    const query: any = {
+    const query: Record<string, unknown> = {
       collection: 'gallery',
       limit: 100,
       sort: 'order',
@@ -21,15 +21,18 @@ export async function GET(request: NextRequest) {
 
     // Grouped response when no category filter
     if (!category || category === 'all') {
-      const grouped = {
-        indoor: [] as any[],
-        outdoor: [] as any[],
-        pool: [] as any[],
-        events: [] as any[],
+      // Tip minimal sigur pentru elemente gallery
+      type GalleryDoc = { category?: string; [key: string]: unknown }
+      const grouped: Record<'indoor'|'outdoor'|'pool'|'events', GalleryDoc[]> = {
+        indoor: [],
+        outdoor: [],
+        pool: [],
+        events: [],
       }
-      for (const doc of result.docs as any[]) {
-        const key = (doc.category || 'events') as keyof typeof grouped
-        grouped[key].push(doc)
+      for (const doc of result.docs as GalleryDoc[]) {
+        const key = (doc.category as keyof typeof grouped) || 'events'
+        // verificăm dacă key este valid
+        if (grouped[key]) grouped[key].push(doc)
       }
       return NextResponse.json(grouped)
     }

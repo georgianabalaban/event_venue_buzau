@@ -66,18 +66,24 @@ export async function GET() {
       return NextResponse.json(defaultData)
     }
 
-    const doc = pages.docs[0] as any
+    const doc = pages.docs[0] as Record<string, unknown>
     // Normalize richText description to plain string for frontend/admin
-    const toPlainText = (node: any): string => {
+    const toPlainText = (node: unknown): string => {
       if (!node) return ''
       if (Array.isArray(node)) return node.map(toPlainText).join(' ')
       if (typeof node === 'string') return node
-      const text = node.text || ''
-      const children = Array.isArray(node.children) ? node.children.map(toPlainText).join(' ') : ''
-      return [text, children].filter(Boolean).join(' ')
+      if (typeof node === 'object' && node !== null) {
+        // @ts-ignore
+        const n = node as { text?: string; children?: unknown[] }
+        const text = n.text || ''
+        const children = Array.isArray(n.children) ? n.children.map(toPlainText).join(' ') : ''
+        return [text, children].filter(Boolean).join(' ')
+      }
+      return ''
     }
 
     const descriptionValue = (() => {
+      // @ts-expect-error
       const v = doc?.about?.description
       if (!v) return undefined
       if (typeof v === 'string') return v
@@ -110,7 +116,7 @@ export async function POST(request: NextRequest) {
         ? {
             ...data.about,
             features: Array.isArray(data.about.features)
-              ? data.about.features.map((f: any) =>
+              ? data.about.features.map((f: string | { feature: string }) =>
                   typeof f === 'string' ? { feature: f } : f
                 )
               : [],
