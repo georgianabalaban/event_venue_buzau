@@ -49,15 +49,28 @@ export async function DELETE(request: NextRequest) {
     const payload = await getPayload({ config })
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
+    const urlParam = searchParams.get('url')
     const skipS3 = searchParams.get('skipS3') === '1'
-    if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 })
+    if (!id && !urlParam) return NextResponse.json({ error: 'Missing id or url' }, { status: 400 })
 
-    // Get the item first to extract S3 key
-    const item = await payload.findByID({ collection: 'gallery', id })
-    console.log('[DELETE] Fetched item:', { id, hasUrl: !!item?.externalUrl, url: item?.externalUrl })
-    if (!skipS3 && item?.externalUrl) {
+    // Determine S3 key either from DB item or from provided URL
+    let externalUrl: string | null = null
+    if (id) {
+      let item: any = null
+      try {
+        item = await payload.findByID({ collection: 'gallery', id })
+      } catch (e: any) {
+        if (!((e && e.status === 404) || (e && e.message && String(e.message).includes('Not Found')))) {
+          throw e
+        }
+      }
+      externalUrl = item?.externalUrl || item?.url || null
+    }
+    if (!externalUrl && urlParam) externalUrl = urlParam
+
+    if (!skipS3 && externalUrl) {
       const { deleteFromS3, extractS3KeyFromUrl } = await import('../../../lib/s3')
-      const s3Key = extractS3KeyFromUrl(item.externalUrl)
+      const s3Key = extractS3KeyFromUrl(externalUrl)
       console.log('[DELETE] Extracted S3 key:', s3Key)
       if (s3Key) {
         try {
@@ -69,7 +82,15 @@ export async function DELETE(request: NextRequest) {
       }
     }
 
-    await payload.delete({ collection: 'gallery', id })
+    if (id) {
+      try {
+        await payload.delete({ collection: 'gallery', id })
+      } catch (e: any) {
+        if (!((e && e.status === 404) || (e && e.message && String(e.message).includes('Not Found')))) {
+          throw e
+        }
+      }
+    }
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('❌ [API] Error deleting gallery item:', error)

@@ -1,6 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import { useState } from 'react'
 import { Check } from 'lucide-react'
 
 interface AboutProps {
@@ -8,6 +9,10 @@ interface AboutProps {
     title?: string
     description?: string | unknown
     features?: Array<{ feature: string }>
+    image?: {
+      url: string
+      alt?: string
+    }
   }
 }
 
@@ -80,14 +85,21 @@ export default function About({ data }: AboutProps) {
             viewport={{ once: true }}
             className="relative"
           >
-            <div className="relative h-[500px] rounded-2xl overflow-hidden shadow-2xl">
-              {/* Placeholder gradient - Replace with actual image */}
-              <div className="absolute inset-0 bg-gradient-to-br from-primary-400 to-secondary-500" />
-              <div className="absolute inset-0 flex items-center justify-center text-white text-2xl font-semibold">
-                Imagine spațiu
+            {(() => {
+              const src = (data as any)?.image?.externalUrl || (data as any)?.image?.url
+              const [ok] = [!!src]
+              return ok
+            })() ? (
+              <ResponsiveAboutImage data={data as any} />
+            ) : (
+              <div className="relative aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary-400 to-secondary-500" />
+                <div className="absolute inset-0 flex items-center justify-center text-white text-2xl font-semibold">
+                  Imagine spațiu
+                </div>
               </div>
-            </div>
-            
+            )}
+
             {/* Decorative elements */}
             <div className="absolute -top-4 -right-4 w-24 h-24 bg-accent-400 rounded-full blur-2xl opacity-50" />
             <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-primary-400 rounded-full blur-2xl opacity-50" />
@@ -95,6 +107,37 @@ export default function About({ data }: AboutProps) {
         </div>
       </div>
     </section>
+  )
+}
+
+function ResponsiveAboutImage({ data }: { data: any }) {
+  const [isValid, setIsValid] = useState(true)
+  const src: string | undefined = data?.image?.externalUrl || data?.image?.url
+  if (!src || !isValid) return (
+    <div className="relative aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl">
+      <div className="absolute inset-0 bg-gradient-to-br from-primary-400 to-secondary-500" />
+      <div className="absolute inset-0 flex items-center justify-center text-white text-2xl font-semibold">
+        Imagine spațiu
+      </div>
+    </div>
+  )
+  return (
+    <div className="max-w-screen-md mx-auto rounded-2xl shadow-2xl overflow-hidden">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt={data?.image?.alt || 'Imagine spațiu'}
+        className="w-full h-auto max-h-[60vh] object-contain"
+        loading="lazy"
+        decoding="async"
+        onError={() => setIsValid(false)}
+        onLoad={(e) => {
+          const img = e.currentTarget
+          // dacă imaginea e anormal de mică (ex: thumbnail 1x1), nu o afișăm
+          if (img.naturalWidth < 50 || img.naturalHeight < 50) setIsValid(false)
+        }}
+      />
+    </div>
   )
 }
 

@@ -32,6 +32,7 @@ export default function Gallery() {
   })
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [failedIds, setFailedIds] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     const load = async () => {
@@ -55,16 +56,27 @@ export default function Gallery() {
     load()
   }, [])
 
-  const images = useMemo(() => {
-    const all = [
-      ...grouped.indoor,
-      ...grouped.outdoor,
-      ...grouped.pool,
-      ...grouped.events,
-    ]
-    if (selectedCategory === 'all') return all
-    return grouped[selectedCategory] || []
-  }, [grouped, selectedCategory])
+  const allImages = useMemo(() => ([
+    ...grouped.indoor,
+    ...grouped.outdoor,
+    ...grouped.pool,
+    ...grouped.events,
+  ]), [grouped])
+
+  // Visible images for current category - used for lightbox navigation and counter
+  const visibleImages = useMemo(() => (
+    selectedCategory === 'all'
+      ? allImages
+      : allImages.filter((img: any) => img?.category === selectedCategory)
+  ), [allImages, selectedCategory])
+
+  const visibleIndexById = useMemo(() => {
+    const map = new Map<string, number>()
+    visibleImages.forEach((img, idx) => {
+      if (img?.id) map.set(img.id, idx)
+    })
+    return map
+  }, [visibleImages])
 
   const openLightbox = (index: number) => {
     setCurrentImageIndex(index)
@@ -76,12 +88,12 @@ export default function Gallery() {
   }, [])
 
   const nextImage = useCallback(() => {
-    setCurrentImageIndex((prev) => (prev + 1) % images.length)
-  }, [images.length])
+    setCurrentImageIndex((prev) => (prev + 1) % Math.max(visibleImages.length, 1))
+  }, [visibleImages.length])
 
   const prevImage = useCallback(() => {
-    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length)
-  }, [images.length])
+    setCurrentImageIndex((prev) => (prev - 1 + Math.max(visibleImages.length, 1)) % Math.max(visibleImages.length, 1))
+  }, [visibleImages.length])
 
   // Keyboard navigation
   useEffect(() => {
@@ -147,15 +159,21 @@ export default function Gallery() {
               }`} />
             </div>
           ))}
-          {!loading && images.map((image: GalleryImage, index: number) => (
+          {!loading && allImages.map((image: GalleryImage, index: number) => {
+            const isVisible = selectedCategory === 'all' || (image as any).category === selectedCategory
+            const visibleIndex = image?.id ? (visibleIndexById.get(image.id) ?? -1) : -1
+            const keyId = (image?.id || `${index}-${image.externalUrl || image.url}`) as string
+            const isFailed = failedIds.has(keyId)
+            if (!isVisible || isFailed) return null
+            return (
             <motion.div
-              key={image.id || index}
+              key={keyId}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1, duration: 0.5 }}
               viewport={{ once: true }}
-              className="break-inside-avoid group relative rounded-2xl overflow-hidden cursor-pointer hover:scale-[1.02] transition-all duration-300 shadow-lg hover:shadow-2xl"
-              onClick={() => openLightbox(index)}
+              className={`break-inside-avoid group relative rounded-2xl overflow-hidden cursor-pointer hover:scale-[1.02] transition-all duration-300 shadow-lg hover:shadow-2xl`}
+              onClick={() => { if (isVisible && visibleIndex >= 0) openLightbox(visibleIndex) }}
             >
               {/* Image with random height for masonry effect */}
               <div className={`relative ${
@@ -170,6 +188,18 @@ export default function Gallery() {
                     alt={image.alt || image.title || 'Imagine'}
                     className="absolute inset-0 w-full h-full object-cover"
                     loading="lazy"
+                    onError={() => {
+                      setFailedIds(prev => {
+                        const next = new Set(prev); next.add(keyId); return next
+                      })
+                    }}
+                    onLoad={(e) => {
+                      const iw = e.currentTarget.naturalWidth
+                      const ih = e.currentTarget.naturalHeight
+                      if (!iw || !ih || iw < 50 || ih < 50) {
+                        setFailedIds(prev => { const next = new Set(prev); next.add(keyId); return next })
+                      }
+                    }}
                   />
                 ) : (
                   <div className="absolute inset-0 bg-gradient-to-br from-blue-400 via-purple-400 to-pink-400" />
@@ -181,7 +211,7 @@ export default function Gallery() {
                 </div>
               </div>
             </motion.div>
-          ))}
+          )})}
         </div>
 
         {/* Lightbox Modal */}
@@ -222,7 +252,7 @@ export default function Gallery() {
                 </button>
 
                 {/* Navigation buttons */}
-                {images.length > 1 && (
+                {visibleImages.length > 1 && (
                   <>
                     <button
                       onClick={prevImage}
@@ -241,11 +271,11 @@ export default function Gallery() {
 
                 {/* Main image */}
                 <div className="relative w-full h-full flex items-center justify-center">
-                  {images[currentImageIndex]?.externalUrl || images[currentImageIndex]?.url ? (
+                  {visibleImages[currentImageIndex]?.externalUrl || visibleImages[currentImageIndex]?.url ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={images[currentImageIndex].externalUrl || images[currentImageIndex].url}
-                      alt={images[currentImageIndex].alt || images[currentImageIndex].title || 'Imagine'}
+                      src={visibleImages[currentImageIndex].externalUrl || visibleImages[currentImageIndex].url}
+                      alt={visibleImages[currentImageIndex].alt || visibleImages[currentImageIndex].title || 'Imagine'}
                       className="max-w-[90vw] max-h-[90vh] w-auto h-auto object-contain rounded-lg"
                       style={{
                         maxWidth: '90vw',
@@ -260,10 +290,10 @@ export default function Gallery() {
                 </div>
 
                 {/* Image counter only */}
-                {images.length > 1 && (
+                {visibleImages.length > 1 && (
                   <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 backdrop-blur-sm rounded-full px-4 py-2 text-white">
                     <p className="text-sm font-medium">
-                      {currentImageIndex + 1} din {images.length}
+                      {currentImageIndex + 1} din {visibleImages.length}
                     </p>
                   </div>
                 )}

@@ -9,6 +9,7 @@ export async function POST(request: NextRequest) {
     
     const file = form.get('file')
     const category = form.get('category') as string
+    const folderOverride = (form.get('folder') as string | null) || null
     const alt = form.get('alt') as string || ''
     const title = form.get('title') as string || ''
 
@@ -32,7 +33,10 @@ export async function POST(request: NextRequest) {
     const ext = path.extname(file.name) || '.jpg'
     const safeBase = path.basename(file.name, ext).replace(/[^a-z0-9-_]+/gi, '-').toLowerCase()
     const filename = `${safeBase}-${Date.now()}${ext}`
-    const s3Key = `gallery/${category}/${filename}`
+    // Allow overriding S3 folder (e.g., "about") while keeping category for DB constraints
+    const safeFolder = folderOverride ? folderOverride.replace(/^\/+|\/+$/g, '').replace(/[^a-z0-9-_/]/gi, '') : ''
+    const prefix = safeFolder && safeFolder.length > 0 ? safeFolder : `gallery/${category}`
+    const s3Key = `${prefix}/${filename}`
 
     // Dynamic imports to avoid issues
     const { uploadToS3 } = await import('../../../../lib/s3')

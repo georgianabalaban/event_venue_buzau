@@ -5,10 +5,11 @@ import { Menu, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface HeaderProps {
-  siteName?: string
+  siteName?: string;
+  nav?: Array<{ label: string; href: string; cta?: boolean }>
 }
 
-export default function Header({ siteName }: HeaderProps) {
+export default function Header({ siteName, nav }: HeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
@@ -16,19 +17,22 @@ export default function Header({ siteName }: HeaderProps) {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50)
     }
-
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  const navLinks = [
-    { href: '#about', label: 'Despre' },
-    { href: '#services', label: 'Servicii' },
-    { href: '#gallery', label: 'Galerie' },
-    { href: '#events', label: 'Evenimente' },
-    { href: '#testimonials', label: 'Testimoniale' },
-    { href: '#contact', label: 'Contact' },
+  const defaultNav = [
+    { label: 'Despre', href: '#about' },
+    { label: 'Servicii', href: '#services' },
+    { label: 'Galerie', href: '#gallery' },
+    { label: 'Evenimente', href: '#events' },
+    { label: 'Testimoniale', href: '#testimonials' },
+    { label: 'Contact', href: '#contact' },
+    { label: 'Rezervă acum', href: '#contact', cta: true }
   ]
+  const navLinks = Array.isArray(nav) && nav.length ? nav : defaultNav
+  const regularLinks = navLinks.filter(l=>!l.cta)
+  const ctaLinks = navLinks.filter(l=>!!l.cta)
 
   return (
     <header
@@ -52,9 +56,9 @@ export default function Header({ siteName }: HeaderProps) {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8">
-            {navLinks.map((link) => (
+            {regularLinks.map((link) => (
               <a
-                key={link.href}
+                key={link.href+link.label}
                 href={link.href}
                 className={`font-medium transition-colors hover:text-primary-600 ${
                   isScrolled ? 'text-gray-700' : 'text-white'
@@ -63,16 +67,19 @@ export default function Header({ siteName }: HeaderProps) {
                 {link.label}
               </a>
             ))}
-            <a
-              href="#contact"
-              className={`px-6 py-3 rounded-full font-bold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 ${
-                isScrolled
-                  ? 'bg-white text-gray-900'
-                  : 'border-2 border-white text-white bg-white/10 backdrop-blur-sm hover:bg-white hover:text-gray-900'
-              }`}
-            >
-              Rezervă acum
-            </a>
+            {ctaLinks.map(link => (
+              <a
+                key={link.href+link.label}
+                href={link.href}
+                className={`px-6 py-3 rounded-full font-bold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 ${
+                  isScrolled
+                    ? 'bg-white text-gray-900'
+                    : 'border-2 border-white text-white bg-white/10 backdrop-blur-sm hover:bg-white hover:text-gray-900'
+                }`}
+              >
+                {link.label}
+              </a>
+            ))}
           </nav>
 
           {/* Mobile Menu Button - Modern burger icon */}
@@ -107,7 +114,6 @@ export default function Header({ siteName }: HeaderProps) {
               className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden"
               onClick={() => setIsMobileMenuOpen(false)}
             />
-            
             {/* Mobile Menu - ALWAYS WHITE BACKGROUND */}
             <motion.div
               initial={{ x: '100%' }}
@@ -120,7 +126,6 @@ export default function Header({ siteName }: HeaderProps) {
                 backgroundImage: 'none'
               }}
             >
-              {/* Close button */}
               <div className="flex justify-end p-4">
                 <button
                   onClick={() => setIsMobileMenuOpen(false)}
@@ -130,18 +135,14 @@ export default function Header({ siteName }: HeaderProps) {
                   <X className="w-6 h-6" />
                 </button>
               </div>
-
               {/* Navigation links */}
               <nav 
                 className="px-6 py-4 flex flex-col gap-2 force-bg-white"
-                style={{ 
-                  backgroundColor: '#ffffff',
-                  backgroundImage: 'none'
-                }}
+                style={{ backgroundColor: '#ffffff', backgroundImage: 'none' }}
               >
-                {navLinks.map((link) => (
+                {regularLinks.map((link) => (
                   <a
-                    key={link.href}
+                    key={link.href+link.label}
                     href={link.href}
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="text-gray-700 font-semibold hover:text-primary-600 hover:bg-primary-50 transition-all duration-200 py-3 px-4 rounded-lg"
@@ -149,15 +150,16 @@ export default function Header({ siteName }: HeaderProps) {
                     {link.label}
                   </a>
                 ))}
-                
-                {/* CTA Button */}
-                <a
-                  href="#contact"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="mt-4 px-6 py-3 bg-gray-900 text-white rounded-full font-bold transition-all duration-300 text-center shadow-lg hover:shadow-xl"
-                >
-                  Rezervă acum
-                </a>
+                {ctaLinks.map(link => (
+                  <a
+                    key={link.href+link.label}
+                    href={link.href}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="mt-4 px-6 py-3 bg-gray-900 text-white rounded-full font-bold transition-all duration-300 text-center shadow-lg hover:shadow-xl"
+                  >
+                    {link.label}
+                  </a>
+                ))}
               </nav>
             </motion.div>
           </>

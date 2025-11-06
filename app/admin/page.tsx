@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Save, Eye, Settings, FileText, Image, Calendar, Users } from 'lucide-react'
 
 // Tipuri pentru datele site-ului
@@ -15,6 +15,7 @@ interface SiteData {
     title: string
     description: string
     features: string[]
+    image?: { id: string; url?: string; alt?: string }
   }
   services: {
     title: string
@@ -38,6 +39,18 @@ interface SiteData {
     url: string
     alt: string
   }>
+  header?: {
+    siteName?: string;
+    nav?: Array<{ label: string; href: string; cta?: boolean }>
+  }
+  story?: {
+    title?: string
+    content?: string
+    highlight?: string
+    missionTitle?: string
+    missionText?: string
+    points?: Array<{ title: string; text: string }>
+  }
 }
 
 // Date default
@@ -57,7 +70,8 @@ const defaultData: SiteData = {
       'Capacitate până la 200 persoane',
       'Parcare privată',
       'Catering personalizat'
-    ]
+    ],
+    image: undefined,
   },
   services: {
     title: "Serviciile noastre",
@@ -104,41 +118,73 @@ const defaultData: SiteData = {
       availableSpots: 100
     }
   ],
-  gallery: []
+  gallery: [],
+  header: {
+    siteName: "Event Venue Buzău",
+    nav: [
+      { label: 'Despre', href: '#about' },
+      { label: 'Servicii', href: '#services' },
+      { label: 'Galerie', href: '#gallery' },
+      { label: 'Evenimente', href: '#events' },
+      { label: 'Testimoniale', href: '#testimonials' },
+      { label: 'Contact', href: '#contact' },
+      { label: 'Rezervă acum', href: '#contact', cta: true }
+    ]
+  },
+  story: {
+    title: 'Povestea noastră',
+    content: 'Suntem o afacere de familie, gândită cu suflet pentru a crea amintiri reale.',
+    points: [
+      { title: 'Autenticitate', text: 'Suntem o afacere de familie, gândită cu suflet.' },
+      { title: 'Atenție la detalii', text: 'Fiecare element este ales cu grijă.' },
+      { title: 'Pasiune', text: 'Iubim ceea ce facem și se vede în fiecare eveniment.' },
+    ]
+  }
 }
 
 export default function AdminPanel() {
-  const [activeTab, setActiveTab] = useState('hero')
+  const [activeTab, setActiveTab] = useState('header')
   const [isEditing, setIsEditing] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [siteData, setSiteData] = useState<SiteData>(defaultData)
   const [featuresText, setFeaturesText] = useState<string>(defaultData.about.features.join('\n'))
+  const storyContentRef = useRef<HTMLTextAreaElement>(null as unknown as HTMLTextAreaElement)
+  // About image upload (single) - gallery-like UX
+  const [aboutDragActive, setAboutDragActive] = useState(false)
+  const [aboutPendingFiles, setAboutPendingFiles] = useState<File[]>([])
+  const [aboutIsUploading, setAboutIsUploading] = useState(false)
 
   const updateServicesTitle = (title: string) => {
-    setSiteData(prev => ({
-      ...prev,
+    const next = {
+      ...siteData,
       services: {
-        ...prev.services,
+        ...siteData.services,
         title,
       },
-    }))
+    }
+    setSiteData(next)
     setIsEditing(true)
   }
 
   const updateServiceItem = (index: number, field: 'name' | 'description' | 'icon', value: string) => {
-    setSiteData(prev => {
-      const items = Array.isArray(prev.services.items) ? [...prev.services.items] : []
-      items[index] = { ...items[index], [field]: value }
-      return {
-        ...prev,
-        services: {
-          ...prev.services,
-          items,
-        },
-      }
-    })
+    const items = Array.isArray(siteData.services.items) ? [...siteData.services.items] : []
+    items[index] = { ...items[index], [field]: value }
+    const next = {
+      ...siteData,
+      services: {
+        ...siteData.services,
+        items,
+      },
+    }
+    setSiteData(next)
     setIsEditing(true)
   }
+
+  const handleHeaderChange = useCallback((header: SiteData['header']) => { 
+    setSiteData(prev => ({...prev, header})); 
+    setIsEditing(true);
+  }, [])
 
   // Încarcă datele din baza de date (Payload) la inițializare
   useEffect(() => {
@@ -147,6 +193,7 @@ export default function AdminPanel() {
         const res = await fetch('/api/pages', { cache: 'no-store' })
         if (res.ok) {
           const data = await res.json()
+          setIsEditing(false) // Reset editing state on load
           setSiteData({
             hero: {
               heading: data?.hero?.heading ?? defaultData.hero.heading,
@@ -162,6 +209,11 @@ export default function AdminPanel() {
                     .map((f: string | { feature?: string }) => (typeof f === 'string' ? f : f?.feature))
                     .filter((v: unknown): v is string => typeof v === 'string' && v.length > 0)
                 : defaultData.about.features,
+              image: data?.about?.image ? {
+                id: typeof data.about.image === 'string' ? data.about.image : (data.about.image.id || data.about.image._id || ''),
+                url: data.about.image?.url || data.about.image?.externalUrl || data.about.image?.filename || undefined,
+                alt: data.about.image?.alt || '',
+              } : undefined
             },
             services: {
               title: data?.services?.title ?? defaultData.services.title,
@@ -171,6 +223,12 @@ export default function AdminPanel() {
             },
             events: defaultData.events,
             gallery: defaultData.gallery,
+            header: data?.header ?? defaultData.header,
+            story: {
+              title: (data as any)?.story?.title ?? defaultData.story?.title,
+              content: typeof (data as any)?.story?.content === 'string' ? (data as any).story.content : defaultData.story?.content,
+              points: Array.isArray((data as any)?.story?.points) ? (data as any).story.points : (defaultData.story?.points || [])
+            },
           })
           const incomingFeatures: string[] = Array.isArray(data?.about?.features)
             ? data.about.features
@@ -181,6 +239,8 @@ export default function AdminPanel() {
         }
       } catch (e) {
         console.error('Failed to load page data:', e)
+      } finally {
+        setLoading(false)
       }
     }
     load()
@@ -204,8 +264,11 @@ export default function AdminPanel() {
             title: siteData.about.title,
             description: siteData.about.description,
             features: featuresArray, // API normalizează string[] -> { feature }
+            image: siteData.about.image?.id,
           },
           services: siteData.services,
+          header: siteData.header,
+          story: siteData.story,
         }),
       })
       if (!res.ok) throw new Error('Save failed')
@@ -217,8 +280,92 @@ export default function AdminPanel() {
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
       setIsEditing(false)
+
+      // Reload admin state from DB to show persisted values
+      try {
+        const reloadRes = await fetch('/api/pages', { cache: 'no-store' })
+        if (reloadRes.ok) {
+          const data = await reloadRes.json()
+          setSiteData({
+            hero: {
+              heading: data?.hero?.heading ?? defaultData.hero.heading,
+              secondaryHeading: data?.hero?.secondaryHeading ?? defaultData.hero.secondaryHeading,
+              subheading: data?.hero?.subheading ?? defaultData.hero.subheading,
+              ctaText: data?.hero?.ctaText ?? defaultData.hero.ctaText,
+            },
+            about: {
+              title: data?.about?.title ?? defaultData.about.title,
+              description: typeof data?.about?.description === 'string' ? data.about.description : defaultData.about.description,
+              features: Array.isArray(data?.about?.features)
+                ? data.about.features
+                    .map((f: string | { feature?: string }) => (typeof f === 'string' ? f : f?.feature))
+                    .filter((v: unknown): v is string => typeof v === 'string' && v.length > 0)
+                : defaultData.about.features,
+              image: data?.about?.image ? {
+                id: typeof data.about.image === 'string' ? data.about.image : (data.about.image.id || data.about.image._id || ''),
+                url: data.about.image?.url || data.about.image?.externalUrl || data.about.image?.filename || undefined,
+                alt: data.about.image?.alt || '',
+              } : undefined
+            },
+            services: {
+              title: data?.services?.title ?? defaultData.services.title,
+              items: Array.isArray(data?.services?.items) && data.services.items.length > 0
+                ? data.services.items
+                : defaultData.services.items,
+            },
+            events: defaultData.events,
+            gallery: defaultData.gallery,
+            header: data?.header ?? defaultData.header,
+            story: {
+              title: (data as any)?.story?.title ?? defaultData.story?.title,
+              content: typeof (data as any)?.story?.content === 'string' ? (data as any).story.content : defaultData.story?.content,
+              points: Array.isArray((data as any)?.story?.points) ? (data as any).story.points : (defaultData.story?.points || [])
+            },
+          })
+          const incomingFeatures: string[] = Array.isArray(data?.about?.features)
+            ? data.about.features
+                .map((f: string | { feature?: string }) => (typeof f === 'string' ? f : f?.feature))
+                .filter((v: unknown): v is string => typeof v === 'string')
+            : defaultData.about.features
+          setFeaturesText(incomingFeatures.join('\n'))
+        }
+      } catch (e2) {
+        console.error('Failed to reload after save:', e2)
+      }
     } catch (e) {
       console.error('Failed to save page data:', e)
+      alert('Eroare la salvare. Verifică consola.')
+    }
+  }
+
+  // Save snapshot helper (used after image upload/delete to auto-save)
+  const autoSaveAboutImage = async (nextImage: { id?: string } | undefined) => {
+    const featuresArray = featuresText.split('\n').map((v) => v.trim()).filter(Boolean)
+    const snapshot = {
+      ...siteData,
+      about: { ...siteData.about, image: nextImage as any },
+    }
+    const res = await fetch('/api/pages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: 'Home Page',
+        hero: snapshot.hero,
+        about: {
+          title: snapshot.about.title,
+          description: snapshot.about.description,
+          features: featuresArray,
+          image: snapshot.about.image?.id,
+        },
+        services: snapshot.services,
+        header: snapshot.header,
+      }),
+    })
+    if (res.ok) {
+      window.dispatchEvent(new CustomEvent('adminDataSaved'))
+      if (window.opener) window.opener.postMessage({ type: 'adminDataSaved' }, '*')
+      setSaved(true); setTimeout(() => setSaved(false), 1500)
+      setIsEditing(false)
     }
   }
 
@@ -230,18 +377,42 @@ export default function AdminPanel() {
     setIsEditing(true)
   }
 
+  const wrapSelection = (ref: React.RefObject<HTMLTextAreaElement>, startMarker: string, endMarker?: string) => {
+    const el = ref.current
+    if (!el) return
+    const value = el.value
+    const selStart = el.selectionStart ?? 0
+    const selEnd = el.selectionEnd ?? 0
+    const before = value.slice(0, selStart)
+    const selected = value.slice(selStart, selEnd)
+    const after = value.slice(selEnd)
+    const end = endMarker ?? startMarker
+    const next = `${before}${startMarker}${selected}${end}${after}`
+    setSiteData(prev => ({ ...prev, story: { ...(prev.story || {}), content: next } }))
+    setIsEditing(true)
+    // restore caret after update (best effort)
+    requestAnimationFrame(() => {
+      if (!ref.current) return
+      const cursor = selStart + startMarker.length + selected.length + end.length
+      ref.current.selectionStart = ref.current.selectionEnd = cursor
+      ref.current.focus()
+    })
+  }
+
   const tabs = [
+    { id: 'header', label: 'Header', icon: Settings },
     { id: 'hero', label: 'Hero Section', icon: FileText },
     { id: 'about', label: 'Despre', icon: Users },
+    { id: 'story', label: 'Povestea noastră', icon: FileText },
     { id: 'services', label: 'Servicii', icon: Settings },
     { id: 'events', label: 'Evenimente', icon: Calendar },
     { id: 'gallery', label: 'Galerie', icon: Image },
   ]
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="flex flex-col h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+      <header className="bg-white shadow-sm border-b flex-shrink-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
@@ -258,16 +429,6 @@ export default function AdminPanel() {
                 Vezi site-ul
               </button>
               <button
-                onClick={() => {
-                  console.log('Current siteData:', siteData)
-                  console.log('localStorage:', localStorage.getItem('siteData'))
-                  console.log('sessionStorage:', sessionStorage.getItem('siteData'))
-                }}
-                className="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-gray-900"
-              >
-                Debug
-              </button>
-              <button
                 onClick={handleSave}
                 disabled={!isEditing}
                 className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -280,7 +441,8 @@ export default function AdminPanel() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Sidebar */}
           <div className="lg:col-span-1">
@@ -318,7 +480,19 @@ export default function AdminPanel() {
               </div>
 
               <div className="p-6">
-                {activeTab === 'hero' && (
+                {loading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  </div>
+                ) : (
+                  <>
+                    {activeTab === 'header' && (
+                      <HeaderAdminSection
+                        value={siteData.header}
+                        onChange={handleHeaderChange}
+                      />
+                    )}
+                    {activeTab === 'hero' && (
                   <div className="space-y-6">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -327,7 +501,7 @@ export default function AdminPanel() {
                       <input
                         type="text"
                         value={siteData.hero.heading}
-                        onChange={(e) => updateSiteData('hero', { ...siteData.hero, heading: e.target.value })}
+                        onChange={(e) => { const next={...siteData, hero:{...siteData.hero, heading:e.target.value}}; setSiteData(next); setIsEditing(true) }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
@@ -338,7 +512,7 @@ export default function AdminPanel() {
                       <input
                         type="text"
                         value={siteData.hero.secondaryHeading}
-                        onChange={(e) => updateSiteData('hero', { ...siteData.hero, secondaryHeading: e.target.value })}
+                        onChange={(e) => { const next={...siteData, hero:{...siteData.hero, secondaryHeading:e.target.value}}; setSiteData(next); setIsEditing(true) }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="prind viață"
                       />
@@ -350,7 +524,7 @@ export default function AdminPanel() {
                       <input
                         type="text"
                         value={siteData.hero.subheading}
-                        onChange={(e) => updateSiteData('hero', { ...siteData.hero, subheading: e.target.value })}
+                        onChange={(e) => { const next={...siteData, hero:{...siteData.hero, subheading:e.target.value}}; setSiteData(next); setIsEditing(true) }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
@@ -361,7 +535,7 @@ export default function AdminPanel() {
                       <input
                         type="text"
                         value={siteData.hero.ctaText}
-                        onChange={(e) => updateSiteData('hero', { ...siteData.hero, ctaText: e.target.value })}
+                        onChange={(e) => { const next={...siteData, hero:{...siteData.hero, ctaText:e.target.value}}; setSiteData(next); setIsEditing(true) }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
@@ -377,7 +551,7 @@ export default function AdminPanel() {
                       <input
                         type="text"
                         value={siteData.about.title}
-                        onChange={(e) => updateSiteData('about', { ...siteData.about, title: e.target.value })}
+                        onChange={(e) => { const next={...siteData, about:{...siteData.about, title:e.target.value}}; setSiteData(next); setIsEditing(true) }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
@@ -388,7 +562,7 @@ export default function AdminPanel() {
                       <textarea
                         rows={4}
                         value={siteData.about.description}
-                        onChange={(e) => updateSiteData('about', { ...siteData.about, description: e.target.value })}
+                        onChange={(e) => { const next={...siteData, about:{...siteData.about, description:e.target.value}}; setSiteData(next); setIsEditing(true) }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
@@ -402,6 +576,300 @@ export default function AdminPanel() {
                         onChange={(e) => { setFeaturesText(e.target.value); setIsEditing(true) }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
+                    </div>
+                    {/* Imagine Despre noi - uploader tip galerie (single) */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Imagine (Despre noi) – afișată în coloana dreaptă
+                      </label>
+                      {(() => {
+                        const img: any = siteData.about.image
+                        return !!(img && (img.url || img.externalUrl))
+                      })() ? (
+                        <div className="mb-4">
+                          <div className="relative aspect-[4/3] max-w-sm rounded-lg overflow-hidden border border-gray-200">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            {(() => {
+                              const img: any = siteData.about.image
+                              const src: string | undefined = img?.url || img?.externalUrl
+                              if (!src) return null
+                              return (
+                                <img
+                                  src={src}
+                                  alt={img?.alt || 'Imagine Despre noi'}
+                                  className="w-full h-full object-cover"
+                                />
+                              )
+                            })()}
+                            {(() => {
+                              const img: any = siteData.about.image
+                              const label = img?.alt || 'Imagine Despre noi'
+                              return (
+                                <div className="absolute bottom-0 left-0 right-0 bg-black/40 text-white text-xs px-2 py-1 truncate">{label}</div>
+                              )
+                            })()}
+                            <button
+                              onClick={async () => {
+                                // Șterge imaginea curentă din S3/DB (fallback la URL dacă doc-ul nu mai există)
+                                const img = siteData.about.image as any
+                                if (img?.id) {
+                                  await fetch(`/api/gallery?id=${img.id}`, { method: 'DELETE' })
+                                } else if (img?.externalUrl || img?.url) {
+                                  const url = encodeURIComponent(img.externalUrl || img.url)
+                                  await fetch(`/api/gallery?url=${url}`, { method: 'DELETE' })
+                                }
+                                setSiteData(prev => ({ ...prev, about: { ...prev.about, image: undefined } }));
+                                await autoSaveAboutImage(undefined)
+                                setIsEditing(true)
+                              }}
+                              className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded"
+                            >
+                              Șterge
+                            </button>
+                          </div>
+                          <div className="mt-3">
+                            <div
+                              onDragOver={(e) => { e.preventDefault(); setAboutDragActive(true) }}
+                              onDragLeave={() => setAboutDragActive(false)}
+                              onDrop={(e) => { e.preventDefault(); setAboutDragActive(false); setAboutPendingFiles(Array.from(e.dataTransfer.files).slice(0,1)) }}
+                              className={`border-2 border-dashed rounded-lg p-4 text-center ${aboutDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
+                            >
+                              <p className="text-sm text-gray-600 mb-2">Înlocuiește imaginea: trage aici sau alege din calculator</p>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => setAboutPendingFiles(e.target.files ? Array.from(e.target.files).slice(0,1) : [])}
+                                className="block w-full text-sm text-gray-900 file:mr-4 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                              />
+                              {aboutPendingFiles.length > 0 && (
+                                <div className="mt-3 text-sm text-gray-700">
+                                  <div className="flex items-center justify-between">
+                                    <span>{aboutPendingFiles[0].name}</span>
+                                    <button
+                                      disabled={aboutIsUploading}
+                                      onClick={async () => {
+                                        const file = aboutPendingFiles[0]
+                                        if (!file) return
+                                        setAboutIsUploading(true)
+                                        try {
+                                      const form = new FormData()
+                                          form.append('file', file)
+                                      form.append('category', 'indoor')
+                                      form.append('folder', 'about')
+                                          const res = await fetch('/api/gallery/upload', { method: 'POST', body: form })
+                                        if (res.ok) {
+                                        const doc = await res.json()
+                                        // delete previous if exists (by id or url)
+                                        const prevImg = siteData.about.image as any
+                                        if (prevImg?.id) {
+                                          await fetch(`/api/gallery?id=${prevImg.id}`, { method: 'DELETE' })
+                                        } else if (prevImg?.externalUrl || prevImg?.url) {
+                                          const url = encodeURIComponent(prevImg.externalUrl || prevImg.url)
+                                          await fetch(`/api/gallery?url=${url}`, { method: 'DELETE' })
+                                        }
+                                          const nextState = {
+                                            ...siteData,
+                                            about: {
+                                              ...siteData.about,
+                                              image: { id: doc.id, url: doc.externalUrl || doc.url, alt: doc.alt || '' }
+                                            }
+                                          }
+                                          setSiteData(nextState)
+                                          await autoSaveAboutImage(nextState.about.image)
+                                            setIsEditing(true)
+                                          }
+                                        } finally {
+                                          setAboutIsUploading(false)
+                                          setAboutPendingFiles([])
+                                        }
+                                      }}
+                                      className="px-3 py-1.5 bg-blue-600 text-white rounded-md disabled:opacity-50"
+                                    >
+                                      {aboutIsUploading ? 'Se încarcă...' : 'Încarcă'}
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div
+                          onDragOver={(e) => { e.preventDefault(); setAboutDragActive(true) }}
+                          onDragLeave={() => setAboutDragActive(false)}
+                          onDrop={(e) => { e.preventDefault(); setAboutDragActive(false); setAboutPendingFiles(Array.from(e.dataTransfer.files).slice(0,1)) }}
+                          className={`border-2 border-dashed rounded-lg p-6 text-center ${aboutDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
+                        >
+                          <p className="text-sm text-gray-600 mb-3">Trage și plasează imaginea aici sau alege din calculator</p>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => setAboutPendingFiles(e.target.files ? Array.from(e.target.files).slice(0,1) : [])}
+                            className="block w-full text-sm text-gray-900 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                          />
+                          {aboutPendingFiles.length > 0 && (
+                            <div className="mt-4 text-sm text-gray-700">
+                              <div className="flex items-center justify-between">
+                                <span>{aboutPendingFiles[0].name}</span>
+                                <button
+                                  disabled={aboutIsUploading}
+                                  onClick={async () => {
+                                    const file = aboutPendingFiles[0]
+                                    if (!file) return
+                                    setAboutIsUploading(true)
+                                    try {
+                                  const form = new FormData()
+                                      form.append('file', file)
+                                  form.append('category', 'indoor')
+                                  form.append('folder', 'about')
+                                      const res = await fetch('/api/gallery/upload', { method: 'POST', body: form })
+                                      if (res.ok) {
+                                        const doc = await res.json()
+                                        // delete previous if exists (by id or url)
+                                        const prevImg = siteData.about.image as any
+                                        if (prevImg?.id) {
+                                          await fetch(`/api/gallery?id=${prevImg.id}`, { method: 'DELETE' })
+                                        } else if (prevImg?.externalUrl || prevImg?.url) {
+                                          const url = encodeURIComponent(prevImg.externalUrl || prevImg.url)
+                                          await fetch(`/api/gallery?url=${url}`, { method: 'DELETE' })
+                                        }
+                                        const nextState = {
+                                          ...siteData,
+                                          about: { ...siteData.about, image: { id: doc.id, url: doc.externalUrl || doc.url, alt: doc.alt || '' } }
+                                        }
+                                        setSiteData(nextState)
+                                        await autoSaveAboutImage(nextState.about.image)
+                                        setIsEditing(true)
+                                      }
+                                    } finally {
+                                      setAboutIsUploading(false)
+                                      setAboutPendingFiles([])
+                                    }
+                                  }}
+                                  className="px-3 py-1.5 bg-blue-600 text-white rounded-md disabled:opacity-50"
+                                >
+                                  {aboutIsUploading ? 'Se încarcă...' : 'Încarcă'}
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'story' && (
+                  <div className="space-y-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Titlu secțiune</label>
+                      <input
+                        type="text"
+                        value={siteData.story?.title || ''}
+                      onChange={(e) => { const next={...siteData, story:{...(siteData.story||{}), title:e.target.value}}; setSiteData(next); setIsEditing(true) }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Conținut (poți folosi **bold**)</label>
+                    <div className="flex items-center gap-2 mb-2">
+                      <button
+                        type="button"
+                        onClick={() => wrapSelection(storyContentRef, '**')}
+                        className="px-2 py-1 text-sm border rounded hover:bg-gray-50"
+                        title="Bold"
+                      ><strong>B</strong></button>
+                      <button
+                        type="button"
+                        onClick={() => wrapSelection(storyContentRef, '*')}
+                        className="px-2 py-1 text-sm border rounded hover:bg-gray-50"
+                        title="Italic"
+                      ><em>I</em></button>
+                    </div>
+                    <textarea
+                      ref={storyContentRef}
+                      rows={9}
+                      value={siteData.story?.content || ''}
+                      onChange={(e) => { const next={...siteData, story:{...(siteData.story||{}), content:e.target.value}}; setSiteData(next); setIsEditing(true) }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder={`Suntem o afacere de familie, gândită cu suflet pentru a crea amintiri reale.\n\nAm transformat cu grijă acest spațiu într-o oază de liniște...`}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Text evidențiat (chenar separat)</label>
+                    <textarea
+                      rows={3}
+                      value={siteData.story?.highlight || ''}
+                      onChange={(e) => { const next={...siteData, story:{...(siteData.story||{}), highlight:e.target.value}}; setSiteData(next); setIsEditing(true) }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Nu există mândrie mai mare decât..."
+                      />
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Titlu misiune</label>
+                        <input
+                          type="text"
+                          value={siteData.story?.missionTitle || ''}
+                          onChange={(e) => { const next={...siteData, story:{...(siteData.story||{}), missionTitle:e.target.value}}; setSiteData(next); setIsEditing(true) }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Text misiune</label>
+                        <textarea
+                          rows={3}
+                          value={siteData.story?.missionText || ''}
+                          onChange={(e) => { const next={...siteData, story:{...(siteData.story||{}), missionText:e.target.value}}; setSiteData(next); setIsEditing(true) }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Puncte evidențiate</label>
+                      <div className="space-y-3">
+                        {(siteData.story?.points || []).map((p, idx) => (
+                          <div key={idx} className="grid grid-cols-1 md:grid-cols-2 gap-2 items-start">
+                            <input
+                              type="text"
+                              value={p.title}
+                              onChange={(e) => {
+                                const points = [...(siteData.story?.points || [])]
+                                points[idx] = { ...points[idx], title: e.target.value }
+                                const next = { ...siteData, story: { ...(siteData.story || {}), points } }
+                                setSiteData(next)
+                                setIsEditing(true)
+                              }}
+                              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="Titlu"
+                            />
+                            <input
+                              type="text"
+                              value={p.text}
+                              onChange={(e) => {
+                                const points = [...(siteData.story?.points || [])]
+                                points[idx] = { ...points[idx], text: e.target.value }
+                                const next = { ...siteData, story: { ...(siteData.story || {}), points } }
+                                setSiteData(next)
+                                setIsEditing(true)
+                              }}
+                              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="Text"
+                            />
+                          </div>
+                        ))}
+                        <div>
+                          <button
+                            className="px-3 py-1.5 text-sm rounded bg-blue-50 text-blue-700 border border-blue-100 hover:bg-blue-100"
+                            onClick={() => {
+                              const nextPoints = [ ...(siteData.story?.points || []), { title: '', text: '' } ]
+                              const next = { ...siteData, story: { ...(siteData.story || {}), points: nextPoints } }
+                              setSiteData(next)
+                              setIsEditing(true)
+                            }}
+                          >Adaugă punct</button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -498,11 +966,22 @@ export default function AdminPanel() {
                 {activeTab === 'gallery' && (
                   <GalleryManager />
                 )}
+                  </>
+                )}
               </div>
             </div>
           </div>
         </div>
+        </div>
       </div>
+      {/* Saved toast */}
+      {saved && (
+        <div className="fixed bottom-4 right-4 z-50">
+          <div className="px-4 py-2 rounded-md shadow-lg bg-green-600 text-white text-sm">
+            Salvat
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -700,3 +1179,81 @@ function ReorderableGrid({ items, onDelete, onReorder }: { items: GalleryItem[];
     </div>
   )
 }
+
+function HeaderAdminSection({ value, onChange }: { value?: SiteData['header']; onChange: (h: SiteData['header']) => void }) {
+  const [localNav, setLocalNav] = useState(value?.nav ?? [
+    { label: 'Despre', href: '#about' },
+    { label: 'Servicii', href: '#services' },
+    { label: 'Galerie', href: '#gallery' },
+    { label: 'Evenimente', href: '#events' },
+    { label: 'Testimoniale', href: '#testimonials' },
+    { label: 'Contact', href: '#contact' },
+    { label: 'Rezervă acum', href: '#contact', cta: true }
+  ])
+  const [siteName, setSiteName] = useState(value?.siteName ?? 'Event Venue Buzău')
+
+  // Sync local state with external state when value changes (e.g. after save reload)
+  useEffect(() => {
+    if (value?.siteName !== undefined) setSiteName(value.siteName)
+    if (value?.nav !== undefined) setLocalNav(value.nav)
+  }, [value])
+
+  const handleSiteNameChange = (newName: string) => {
+    setSiteName(newName)
+    onChange({ siteName: newName, nav: localNav })
+  }
+
+  const handleNavChange = (i: number, k: 'label'|'href'|'cta', v: string|boolean) => {
+    const updatedNav = localNav.map((item, idx) => idx === i ? { ...item, [k]: v } : item)
+    setLocalNav(updatedNav)
+    onChange({ siteName, nav: updatedNav })
+  }
+
+  const handleAdd = () => {
+    const updatedNav = [...localNav, { label: '', href: '' }]
+    setLocalNav(updatedNav)
+    onChange({ siteName, nav: updatedNav })
+  }
+
+  const handleDelete = (i: number) => {
+    const updatedNav = localNav.filter((_, idx) => idx !== i)
+    setLocalNav(updatedNav)
+    onChange({ siteName, nav: updatedNav })
+  }
+  const handleReorder = (from: number, to: number) => {
+    const copy = [...localNav]
+    const [m] = copy.splice(from, 1)
+    copy.splice(to, 0, m)
+    setLocalNav(copy)
+    onChange({ siteName, nav: copy })
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Nume/logo site (stânga header)</label>
+        <input type="text" value={siteName}
+          onChange={e => handleSiteNameChange(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Linkuri meniu header:</label>
+        <ul className="space-y-2">
+          {localNav.map((item, i) => (
+            <li key={i} className="flex gap-2 items-center">
+              <input value={item.label} onChange={e => handleNavChange(i, 'label', e.target.value)} placeholder="Text link" className="px-2 py-1 border rounded w-36 text-sm" />
+              <input value={item.href} onChange={e => handleNavChange(i, 'href', e.target.value)} placeholder="#link" className="px-2 py-1 border rounded w-32 text-sm" />
+              <label className="flex items-center gap-1 text-xs"><input type="checkbox" checked={!!item.cta} onChange={e => handleNavChange(i, 'cta', e.target.checked)} /> CTA</label>
+              <button className="text-red-500 text-xs" onClick={() => handleDelete(i)} title="Șterge">✕</button>
+              {/* reordering up/down */}
+              <button className="text-gray-500 text-xs" disabled={i===0} onClick={() => handleReorder(i, i-1)} title="Sus">↑</button>
+              <button className="text-gray-500 text-xs" disabled={i===localNav.length-1} onClick={() => handleReorder(i, i+1)} title="Jos">↓</button>
+            </li>
+          ))}
+        </ul>
+        <button className="mt-2 px-2 py-1 text-sm bg-blue-50 border border-blue-100 rounded hover:bg-blue-100" onClick={handleAdd}>Adaugă link nou</button>
+      </div>
+    </div>
+  )
+}
+

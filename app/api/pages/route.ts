@@ -6,10 +6,21 @@ export async function GET() {
   try {
     const payload = await getPayload({ config })
     
-    const pages = await payload.find({
+    let pages = await payload.find({
       collection: 'pages',
       limit: 1,
+      depth: 2, // populate relations like about.image and others
+      where: { slug: { equals: 'home' } },
     })
+
+    // Fallback: if no 'home' page exists, load the first available page
+    if (pages.docs.length === 0) {
+      pages = await payload.find({
+        collection: 'pages',
+        limit: 1,
+        depth: 2,
+      })
+    }
 
     // If no pages exist, return default data
     if (pages.docs.length === 0) {
@@ -19,6 +30,18 @@ export async function GET() {
           secondaryHeading: 'prind viață',
           subheading: 'Spațiu perfect pentru evenimente memorabile',
           ctaText: 'Rezervă acum'
+        },
+        header: {
+          siteName: 'Event Venue Buzău',
+          nav: [
+            { label: 'Despre', href: '#about' },
+            { label: 'Servicii', href: '#services' },
+            { label: 'Galerie', href: '#gallery' },
+            { label: 'Evenimente', href: '#events' },
+            { label: 'Testimoniale', href: '#testimonials' },
+            { label: 'Contact', href: '#contact' },
+            { label: 'Rezervă acum', href: '#contact', cta: true }
+          ]
         },
         about: {
           title: 'Despre noi',
@@ -56,6 +79,18 @@ export async function GET() {
             }
           ]
         },
+        story: {
+          title: 'Povestea noastră',
+          content: 'Suntem o afacere de familie, gândită cu suflet pentru a crea amintiri reale.\n\nAm transformat cu grijă acest spațiu într-o oază de liniște și frumusețe, situată lângă Buzău, unde natura se îmbină perfect cu confortul modern. Am pus aici toată energia și pasiunea noastră pentru a crea un cadru în care fiecare eveniment devine o amintire de neuitat.\n\nCu experiență în organizarea a sute de evenimente, de la nunți de vis și petreceri corporate până la aniversări intime și celebrări speciale, am învățat că fiecare eveniment este unic și merită o atenție personalizată.',
+          highlight: 'Nu există mândrie mai mare decât să știm că am făcut parte din bucuria celor care ne-au ales și să vedem cum visurile lor prind viață în grădina noastră.',
+          missionTitle: 'Misiunea noastră',
+          missionText: 'Să creăm cadrul perfect pentru evenimente de suflet, unde fiecare detaliu este gândit cu grijă și pasiune, pentru ca tu să te bucuri din plin de momentele tale speciale.',
+          points: [
+            { title: 'Autenticitate', text: 'Suntem o afacere de familie, gândită cu suflet.' },
+            { title: 'Atenție la detalii', text: 'Fiecare element este ales cu grijă.' },
+            { title: 'Pasiune', text: 'Iubim ceea ce facem și se vede în fiecare eveniment.' },
+          ],
+        },
         contact: {
           title: 'Contactează-ne',
           phone: '+40 234 567 890',
@@ -91,12 +126,15 @@ export async function GET() {
 
     const docObj = doc as Record<string, unknown>
     const aboutObj = (docObj.about as Record<string, unknown>) || {}
+    const headerObj = (docObj.header as Record<string, unknown>) || {}
+
     return NextResponse.json({
       ...docObj,
       about: {
         ...aboutObj,
         description: descriptionValue,
       },
+      header: { ...headerObj }
     })
   } catch (error) {
     console.error('Error fetching pages:', error)
@@ -123,6 +161,20 @@ export async function POST(request: NextRequest) {
               : [],
           }
         : undefined,
+      story: data?.story ? {
+        ...data.story,
+        points: Array.isArray(data.story.points) ? data.story.points : [],
+      } : undefined,
+        header: data?.header ? {
+          ...data.header,
+          nav: Array.isArray(data.header.nav)
+            ? data.header.nav.map((l: any) => ({
+                label: l.label || '',
+                href: l.href || '',
+                cta: !!l.cta
+              }))
+            : []
+        } : undefined,
     }
 
     console.log('📝 [API] Received page data:', data)
@@ -139,11 +191,38 @@ export async function POST(request: NextRequest) {
 
     console.log('📝 [API] Existing pages:', existingPages.docs.length)
 
+    async function saveWithRetry<T>(fn: () => Promise<T>, attempts = 5): Promise<T> {
+      let lastErr: unknown
+      for (let i = 0; i < attempts; i++) {
+        try {
+          return await fn()
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err)
+          const isWriteConflict = msg.includes('Write conflict') || msg.includes('E11000')
+          lastErr = err
+          if (!isWriteConflict || i === attempts - 1) break
+          const backoff = 100 + Math.floor(Math.random() * 150)
+          console.warn(`⚠️ [API] Write conflict, retrying in ${backoff}ms (attempt ${i + 2}/${attempts})`)
+          await new Promise(r => setTimeout(r, backoff))
+        }
+      }
+      throw lastErr
+    }
+
+    // Optimistic concurrency: reject older writes
+    const incomingUpdatedAt = data?.lastUpdatedAt ? new Date(data.lastUpdatedAt) : null
+    const currentDoc = existingPages.docs[0] as any
+    if (incomingUpdatedAt && currentDoc?.updatedAt) {
+      const currentUpdatedAt = new Date(currentDoc.updatedAt)
+      if (incomingUpdatedAt < currentUpdatedAt) {
+        return NextResponse.json({ error: 'Write conflict: newer version on server' }, { status: 409 })
+      }
+    }
+
     let page
     if (existingPages.docs.length > 0) {
-      // Update existing page
       console.log('📝 [API] Updating existing page:', existingPages.docs[0].id)
-      page = await payload.update({
+      page = await saveWithRetry(() => payload.update({
         collection: 'pages',
         id: existingPages.docs[0].id,
         data: {
@@ -151,18 +230,17 @@ export async function POST(request: NextRequest) {
           slug: 'home',
           title: normalized.title || 'Home Page',
         },
-      })
+      }))
     } else {
-      // Create new page
       console.log('📝 [API] Creating new page')
-      page = await payload.create({
+      page = await saveWithRetry(() => payload.create({
         collection: 'pages',
         data: {
           ...normalized,
           slug: 'home',
           title: normalized.title || 'Home Page',
         },
-      })
+      }))
     }
 
     console.log('✅ [API] Page saved successfully:', page.id)
