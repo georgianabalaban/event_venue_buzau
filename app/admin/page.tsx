@@ -15,7 +15,7 @@ interface SiteData {
     title: string
     description: string
     features: string[]
-    image?: { id: string; url?: string; alt?: string }
+    image?: { id?: string; url?: string; externalUrl?: string; alt?: string }
   }
   services: {
     title: string
@@ -142,6 +142,160 @@ const defaultData: SiteData = {
   }
 }
 
+const isNonEmptyString = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0
+
+type PayloadFeature = string | { feature?: string | null }
+
+type PayloadImageDoc = {
+  id?: string | null
+  _id?: string | null
+  url?: string | null
+  externalUrl?: string | null
+  filename?: string | null
+  alt?: string | null
+}
+
+type PayloadNavItem = { label?: string | null; href?: string | null; cta?: boolean | null }
+
+type PayloadStoryPointDoc = { title?: string | null; text?: string | null }
+
+type PayloadServicesItem = { name?: string | null; description?: string | null; icon?: string | null }
+
+interface PayloadPageResponse {
+  hero?: Partial<SiteData['hero']>
+  about?: {
+    title?: string | null
+    description?: unknown
+    features?: PayloadFeature[] | null
+    image?: PayloadImageDoc | null
+  }
+  services?: {
+    title?: string | null
+    items?: PayloadServicesItem[] | null
+  }
+  header?: {
+    siteName?: string | null
+    nav?: Array<PayloadNavItem> | null
+  }
+  story?: {
+    title?: string | null
+    content?: unknown
+    highlight?: string | null
+    missionTitle?: string | null
+    missionText?: string | null
+    points?: PayloadStoryPointDoc[] | null
+  }
+}
+
+interface GalleryUploadResponse {
+  id?: string | null
+  url?: string | null
+  externalUrl?: string | null
+  alt?: string | null
+}
+
+const normalizeFeatures = (features?: PayloadFeature[] | null): string[] => {
+  if (!Array.isArray(features)) return []
+  return features
+    .map((feature) => {
+      if (typeof feature === 'string') return feature.trim()
+      return feature?.feature?.trim() ?? ''
+    })
+    .filter(isNonEmptyString)
+}
+
+const normalizeImage = (image?: PayloadImageDoc | null): SiteData['about']['image'] | undefined => {
+  if (!image) return undefined
+  const url = image.externalUrl ?? image.url ?? undefined
+  const id = image.id ?? image._id ?? undefined
+  if (!id && !url) return undefined
+  return {
+    id,
+    url: image.url ?? undefined,
+    externalUrl: image.externalUrl ?? undefined,
+    alt: image.alt ?? ''
+  }
+}
+
+const normalizeNav = (nav?: Array<PayloadNavItem> | null): Array<{ label: string; href: string; cta?: boolean }> => {
+  if (!Array.isArray(nav)) return []
+  return nav
+    .map((item) => ({
+      label: item?.label ?? '',
+      href: item?.href ?? '',
+      cta: Boolean(item?.cta),
+    }))
+    .filter((item) => item.label !== '' || item.href !== '')
+}
+
+const normalizeStoryPoints = (points?: PayloadStoryPointDoc[] | null): Array<{ title: string; text: string }> => {
+  if (!Array.isArray(points)) return []
+  return points
+    .map((point) => ({
+      title: point?.title ?? '',
+      text: point?.text ?? '',
+    }))
+    .filter((point) => point.title !== '' || point.text !== '')
+}
+
+const mapPayloadToSiteData = (payload?: PayloadPageResponse | null): SiteData => {
+  const hero: SiteData['hero'] = {
+    heading: payload?.hero?.heading ?? defaultData.hero.heading,
+    secondaryHeading: payload?.hero?.secondaryHeading ?? defaultData.hero.secondaryHeading,
+    subheading: payload?.hero?.subheading ?? defaultData.hero.subheading,
+    ctaText: payload?.hero?.ctaText ?? defaultData.hero.ctaText,
+  }
+
+  const payloadFeatures = normalizeFeatures(payload?.about?.features)
+  const aboutImage = normalizeImage(payload?.about?.image)
+
+  const about: SiteData['about'] = {
+    title: payload?.about?.title ?? defaultData.about.title,
+    description: typeof payload?.about?.description === 'string' ? payload.about.description : defaultData.about.description,
+    features: payloadFeatures.length > 0 ? payloadFeatures : defaultData.about.features,
+    image: aboutImage,
+  }
+
+  const servicesItems = Array.isArray(payload?.services?.items) && payload.services?.items?.length
+    ? payload.services.items.map((item) => ({
+        name: item?.name ?? '',
+        description: item?.description ?? '',
+        icon: item?.icon ?? '',
+      }))
+    : defaultData.services.items
+
+  const services: SiteData['services'] = {
+    title: payload?.services?.title ?? defaultData.services.title,
+    items: servicesItems,
+  }
+
+  const navItems = normalizeNav(payload?.header?.nav)
+  const header: SiteData['header'] = {
+    siteName: payload?.header?.siteName ?? defaultData.header?.siteName,
+    nav: navItems.length > 0 ? navItems : defaultData.header?.nav,
+  }
+
+  const storyPoints = normalizeStoryPoints(payload?.story?.points)
+  const story: SiteData['story'] = {
+    title: payload?.story?.title ?? defaultData.story?.title,
+    content: typeof payload?.story?.content === 'string' ? payload.story.content : defaultData.story?.content,
+    highlight: payload?.story?.highlight ?? defaultData.story?.highlight,
+    missionTitle: payload?.story?.missionTitle ?? defaultData.story?.missionTitle,
+    missionText: payload?.story?.missionText ?? defaultData.story?.missionText,
+    points: storyPoints.length > 0 ? storyPoints : defaultData.story?.points ?? [],
+  }
+
+  return {
+    hero,
+    about,
+    services,
+    events: defaultData.events,
+    gallery: defaultData.gallery,
+    header,
+    story,
+  }
+}
+
 export default function AdminPanel() {
   const [activeTab, setActiveTab] = useState('header')
   const [isEditing, setIsEditing] = useState(false)
@@ -149,7 +303,7 @@ export default function AdminPanel() {
   const [loading, setLoading] = useState(true)
   const [siteData, setSiteData] = useState<SiteData>(defaultData)
   const [featuresText, setFeaturesText] = useState<string>(defaultData.about.features.join('\n'))
-  const storyContentRef = useRef<HTMLTextAreaElement>(null as unknown as HTMLTextAreaElement)
+  const storyContentRef = useRef<HTMLTextAreaElement | null>(null)
   // About image upload (single) - gallery-like UX
   const [aboutDragActive, setAboutDragActive] = useState(false)
   const [aboutPendingFiles, setAboutPendingFiles] = useState<File[]>([])
@@ -192,50 +346,11 @@ export default function AdminPanel() {
       try {
         const res = await fetch('/api/pages', { cache: 'no-store' })
         if (res.ok) {
-          const data = await res.json()
+          const payload = (await res.json()) as PayloadPageResponse
+          const mapped = mapPayloadToSiteData(payload)
           setIsEditing(false) // Reset editing state on load
-          setSiteData({
-            hero: {
-              heading: data?.hero?.heading ?? defaultData.hero.heading,
-              secondaryHeading: data?.hero?.secondaryHeading ?? defaultData.hero.secondaryHeading,
-              subheading: data?.hero?.subheading ?? defaultData.hero.subheading,
-              ctaText: data?.hero?.ctaText ?? defaultData.hero.ctaText,
-            },
-            about: {
-              title: data?.about?.title ?? defaultData.about.title,
-              description: typeof data?.about?.description === 'string' ? data.about.description : defaultData.about.description,
-              features: Array.isArray(data?.about?.features)
-                ? data.about.features
-                    .map((f: string | { feature?: string }) => (typeof f === 'string' ? f : f?.feature))
-                    .filter((v: unknown): v is string => typeof v === 'string' && v.length > 0)
-                : defaultData.about.features,
-              image: data?.about?.image ? {
-                id: typeof data.about.image === 'string' ? data.about.image : (data.about.image.id || data.about.image._id || ''),
-                url: data.about.image?.url || data.about.image?.externalUrl || data.about.image?.filename || undefined,
-                alt: data.about.image?.alt || '',
-              } : undefined
-            },
-            services: {
-              title: data?.services?.title ?? defaultData.services.title,
-              items: Array.isArray(data?.services?.items) && data.services.items.length > 0
-                ? data.services.items
-                : defaultData.services.items,
-            },
-            events: defaultData.events,
-            gallery: defaultData.gallery,
-            header: data?.header ?? defaultData.header,
-            story: {
-              title: (data as any)?.story?.title ?? defaultData.story?.title,
-              content: typeof (data as any)?.story?.content === 'string' ? (data as any).story.content : defaultData.story?.content,
-              points: Array.isArray((data as any)?.story?.points) ? (data as any).story.points : (defaultData.story?.points || [])
-            },
-          })
-          const incomingFeatures: string[] = Array.isArray(data?.about?.features)
-            ? data.about.features
-                .map((f: string | { feature?: string }) => (typeof f === 'string' ? f : f?.feature))
-                .filter((v: unknown): v is string => typeof v === 'string')
-            : defaultData.about.features
-          setFeaturesText(incomingFeatures.join('\n'))
+          setSiteData(mapped)
+          setFeaturesText(mapped.about.features.join('\n'))
         }
       } catch (e) {
         console.error('Failed to load page data:', e)
@@ -285,49 +400,10 @@ export default function AdminPanel() {
       try {
         const reloadRes = await fetch('/api/pages', { cache: 'no-store' })
         if (reloadRes.ok) {
-          const data = await reloadRes.json()
-          setSiteData({
-            hero: {
-              heading: data?.hero?.heading ?? defaultData.hero.heading,
-              secondaryHeading: data?.hero?.secondaryHeading ?? defaultData.hero.secondaryHeading,
-              subheading: data?.hero?.subheading ?? defaultData.hero.subheading,
-              ctaText: data?.hero?.ctaText ?? defaultData.hero.ctaText,
-            },
-            about: {
-              title: data?.about?.title ?? defaultData.about.title,
-              description: typeof data?.about?.description === 'string' ? data.about.description : defaultData.about.description,
-              features: Array.isArray(data?.about?.features)
-                ? data.about.features
-                    .map((f: string | { feature?: string }) => (typeof f === 'string' ? f : f?.feature))
-                    .filter((v: unknown): v is string => typeof v === 'string' && v.length > 0)
-                : defaultData.about.features,
-              image: data?.about?.image ? {
-                id: typeof data.about.image === 'string' ? data.about.image : (data.about.image.id || data.about.image._id || ''),
-                url: data.about.image?.url || data.about.image?.externalUrl || data.about.image?.filename || undefined,
-                alt: data.about.image?.alt || '',
-              } : undefined
-            },
-            services: {
-              title: data?.services?.title ?? defaultData.services.title,
-              items: Array.isArray(data?.services?.items) && data.services.items.length > 0
-                ? data.services.items
-                : defaultData.services.items,
-            },
-            events: defaultData.events,
-            gallery: defaultData.gallery,
-            header: data?.header ?? defaultData.header,
-            story: {
-              title: (data as any)?.story?.title ?? defaultData.story?.title,
-              content: typeof (data as any)?.story?.content === 'string' ? (data as any).story.content : defaultData.story?.content,
-              points: Array.isArray((data as any)?.story?.points) ? (data as any).story.points : (defaultData.story?.points || [])
-            },
-          })
-          const incomingFeatures: string[] = Array.isArray(data?.about?.features)
-            ? data.about.features
-                .map((f: string | { feature?: string }) => (typeof f === 'string' ? f : f?.feature))
-                .filter((v: unknown): v is string => typeof v === 'string')
-            : defaultData.about.features
-          setFeaturesText(incomingFeatures.join('\n'))
+          const payload = (await reloadRes.json()) as PayloadPageResponse
+          const mapped = mapPayloadToSiteData(payload)
+          setSiteData(mapped)
+          setFeaturesText(mapped.about.features.join('\n'))
         }
       } catch (e2) {
         console.error('Failed to reload after save:', e2)
@@ -339,11 +415,14 @@ export default function AdminPanel() {
   }
 
   // Save snapshot helper (used after image upload/delete to auto-save)
-  const autoSaveAboutImage = async (nextImage: { id?: string } | undefined) => {
-    const featuresArray = featuresText.split('\n').map((v) => v.trim()).filter(Boolean)
-    const snapshot = {
+  const autoSaveAboutImage = async (nextImage: SiteData['about']['image'] | undefined) => {
+    const featuresArray = featuresText
+      .split('\n')
+      .map((value) => value.trim())
+      .filter(isNonEmptyString)
+    const snapshot: SiteData = {
       ...siteData,
-      about: { ...siteData.about, image: nextImage as any },
+      about: { ...siteData.about, image: nextImage },
     }
     const res = await fetch('/api/pages', {
       method: 'POST',
@@ -364,20 +443,63 @@ export default function AdminPanel() {
     if (res.ok) {
       window.dispatchEvent(new CustomEvent('adminDataSaved'))
       if (window.opener) window.opener.postMessage({ type: 'adminDataSaved' }, '*')
-      setSaved(true); setTimeout(() => setSaved(false), 1500)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 1500)
       setIsEditing(false)
     }
   }
 
-  const updateSiteData = (section: keyof SiteData, data: Partial<SiteData[keyof SiteData]>) => {
-    setSiteData(prev => ({
-      ...prev,
-      [section]: data
-    }))
-    setIsEditing(true)
+  const removeAboutImageFromServer = async (image?: SiteData['about']['image']) => {
+    if (!image) return
+    if (image.id) {
+      await fetch(`/api/gallery?id=${image.id}`, { method: 'DELETE' })
+      return
+    }
+    const removableUrl = image.externalUrl ?? image.url
+    if (removableUrl) {
+      const encodedUrl = encodeURIComponent(removableUrl)
+      await fetch(`/api/gallery?url=${encodedUrl}`, { method: 'DELETE' })
+    }
   }
 
-  const wrapSelection = (ref: React.RefObject<HTMLTextAreaElement>, startMarker: string, endMarker?: string) => {
+  const uploadAboutImageFile = async (file: File | null) => {
+    if (!file) return
+    setAboutIsUploading(true)
+    try {
+      const form = new FormData()
+      form.append('file', file)
+      form.append('category', 'indoor')
+      form.append('folder', 'about')
+      const response = await fetch('/api/gallery/upload', { method: 'POST', body: form })
+      if (!response.ok) return
+      const doc = (await response.json()) as GalleryUploadResponse
+
+      const previousImage = siteData.about.image
+      if (previousImage) {
+        await removeAboutImageFromServer(previousImage)
+      }
+
+      const uploadedImage: SiteData['about']['image'] = {
+        id: doc.id ?? undefined,
+        url: doc.url ?? undefined,
+        externalUrl: doc.externalUrl ?? undefined,
+        alt: doc.alt ?? '',
+      }
+
+      setSiteData(prev => ({
+        ...prev,
+        about: { ...prev.about, image: uploadedImage },
+      }))
+
+      await autoSaveAboutImage(uploadedImage)
+      setIsEditing(true)
+    } finally {
+      setAboutIsUploading(false)
+      setAboutPendingFiles([])
+    }
+  }
+
+  const wrapSelection = (ref: React.RefObject<HTMLTextAreaElement | null>, startMarker: string, endMarker?: string) => {
     const el = ref.current
     if (!el) return
     const value = el.value
@@ -408,6 +530,66 @@ export default function AdminPanel() {
     { id: 'events', label: 'Evenimente', icon: Calendar },
     { id: 'gallery', label: 'Galerie', icon: Image },
   ]
+
+  const handleDeleteAboutImage = async () => {
+    await removeAboutImageFromServer(siteData.about.image)
+    setSiteData(prev => ({ ...prev, about: { ...prev.about, image: undefined } }))
+    setAboutPendingFiles([])
+    await autoSaveAboutImage(undefined)
+    setIsEditing(true)
+  }
+
+  const renderAboutUploadControls = (variant: 'replace' | 'initial') => {
+    const dropZonePadding = variant === 'replace' ? 'p-4' : 'p-6'
+    const description = variant === 'replace'
+      ? 'Înlocuiește imaginea: trage aici sau alege din calculator'
+      : 'Trage și plasează imaginea aici sau alege din calculator'
+    const containerSpacing = variant === 'replace' ? 'mt-3' : ''
+    const textMargin = variant === 'replace' ? 'mb-2' : 'mb-3'
+
+    return (
+      <div className={containerSpacing}>
+        <div
+          onDragOver={(event) => { event.preventDefault(); setAboutDragActive(true) }}
+          onDragLeave={() => setAboutDragActive(false)}
+          onDrop={(event) => {
+            event.preventDefault()
+            setAboutDragActive(false)
+            setAboutPendingFiles(Array.from(event.dataTransfer.files).slice(0, 1))
+          }}
+          className={`border-2 border-dashed rounded-lg text-center ${dropZonePadding} ${aboutDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
+        >
+          <p className={`text-sm text-gray-600 ${textMargin}`}>{description}</p>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(event) => setAboutPendingFiles(event.target.files ? Array.from(event.target.files).slice(0, 1) : [])}
+            className="block w-full text-sm text-gray-900 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+          />
+          {aboutPendingFiles.length > 0 && (
+            <div className="mt-3 text-sm text-gray-700">
+              <div className="flex items-center justify-between">
+                <span>{aboutPendingFiles[0].name}</span>
+                <button
+                  type="button"
+                  disabled={aboutIsUploading}
+                  onClick={() => uploadAboutImageFile(aboutPendingFiles[0] ?? null)}
+                  className="px-3 py-1.5 bg-blue-600 text-white rounded-md disabled:opacity-50"
+                >
+                  {aboutIsUploading ? 'Se încarcă...' : 'Încarcă'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  const aboutImage = siteData.about.image
+  const aboutImageUrl = aboutImage?.externalUrl ?? aboutImage?.url ?? ''
+  const aboutImageAlt = aboutImage?.alt ?? 'Imagine Despre noi'
+  const hasAboutImage = isNonEmptyString(aboutImageUrl)
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
@@ -582,178 +764,29 @@ export default function AdminPanel() {
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Imagine (Despre noi) – afișată în coloana dreaptă
                       </label>
-                      {(() => {
-                        const img: any = siteData.about.image
-                        return !!(img && (img.url || img.externalUrl))
-                      })() ? (
+                      {hasAboutImage ? (
                         <div className="mb-4">
                           <div className="relative aspect-[4/3] max-w-sm rounded-lg overflow-hidden border border-gray-200">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            {(() => {
-                              const img: any = siteData.about.image
-                              const src: string | undefined = img?.url || img?.externalUrl
-                              if (!src) return null
-                              return (
-                                <img
-                                  src={src}
-                                  alt={img?.alt || 'Imagine Despre noi'}
-                                  className="w-full h-full object-cover"
-                                />
-                              )
-                            })()}
-                            {(() => {
-                              const img: any = siteData.about.image
-                              const label = img?.alt || 'Imagine Despre noi'
-                              return (
-                                <div className="absolute bottom-0 left-0 right-0 bg-black/40 text-white text-xs px-2 py-1 truncate">{label}</div>
-                              )
-                            })()}
+                            <img
+                              src={aboutImageUrl}
+                              alt={aboutImageAlt}
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute bottom-0 left-0 right-0 bg-black/40 text-white text-xs px-2 py-1 truncate">
+                              {aboutImageAlt}
+                            </div>
                             <button
-                              onClick={async () => {
-                                // Șterge imaginea curentă din S3/DB (fallback la URL dacă doc-ul nu mai există)
-                                const img = siteData.about.image as any
-                                if (img?.id) {
-                                  await fetch(`/api/gallery?id=${img.id}`, { method: 'DELETE' })
-                                } else if (img?.externalUrl || img?.url) {
-                                  const url = encodeURIComponent(img.externalUrl || img.url)
-                                  await fetch(`/api/gallery?url=${url}`, { method: 'DELETE' })
-                                }
-                                setSiteData(prev => ({ ...prev, about: { ...prev.about, image: undefined } }));
-                                await autoSaveAboutImage(undefined)
-                                setIsEditing(true)
-                              }}
+                              onClick={handleDeleteAboutImage}
                               className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded"
                             >
                               Șterge
                             </button>
                           </div>
-                          <div className="mt-3">
-                            <div
-                              onDragOver={(e) => { e.preventDefault(); setAboutDragActive(true) }}
-                              onDragLeave={() => setAboutDragActive(false)}
-                              onDrop={(e) => { e.preventDefault(); setAboutDragActive(false); setAboutPendingFiles(Array.from(e.dataTransfer.files).slice(0,1)) }}
-                              className={`border-2 border-dashed rounded-lg p-4 text-center ${aboutDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
-                            >
-                              <p className="text-sm text-gray-600 mb-2">Înlocuiește imaginea: trage aici sau alege din calculator</p>
-                              <input
-                                type="file"
-                                accept="image/*"
-                                onChange={(e) => setAboutPendingFiles(e.target.files ? Array.from(e.target.files).slice(0,1) : [])}
-                                className="block w-full text-sm text-gray-900 file:mr-4 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                              />
-                              {aboutPendingFiles.length > 0 && (
-                                <div className="mt-3 text-sm text-gray-700">
-                                  <div className="flex items-center justify-between">
-                                    <span>{aboutPendingFiles[0].name}</span>
-                                    <button
-                                      disabled={aboutIsUploading}
-                                      onClick={async () => {
-                                        const file = aboutPendingFiles[0]
-                                        if (!file) return
-                                        setAboutIsUploading(true)
-                                        try {
-                                      const form = new FormData()
-                                          form.append('file', file)
-                                      form.append('category', 'indoor')
-                                      form.append('folder', 'about')
-                                          const res = await fetch('/api/gallery/upload', { method: 'POST', body: form })
-                                        if (res.ok) {
-                                        const doc = await res.json()
-                                        // delete previous if exists (by id or url)
-                                        const prevImg = siteData.about.image as any
-                                        if (prevImg?.id) {
-                                          await fetch(`/api/gallery?id=${prevImg.id}`, { method: 'DELETE' })
-                                        } else if (prevImg?.externalUrl || prevImg?.url) {
-                                          const url = encodeURIComponent(prevImg.externalUrl || prevImg.url)
-                                          await fetch(`/api/gallery?url=${url}`, { method: 'DELETE' })
-                                        }
-                                          const nextState = {
-                                            ...siteData,
-                                            about: {
-                                              ...siteData.about,
-                                              image: { id: doc.id, url: doc.externalUrl || doc.url, alt: doc.alt || '' }
-                                            }
-                                          }
-                                          setSiteData(nextState)
-                                          await autoSaveAboutImage(nextState.about.image)
-                                            setIsEditing(true)
-                                          }
-                                        } finally {
-                                          setAboutIsUploading(false)
-                                          setAboutPendingFiles([])
-                                        }
-                                      }}
-                                      className="px-3 py-1.5 bg-blue-600 text-white rounded-md disabled:opacity-50"
-                                    >
-                                      {aboutIsUploading ? 'Se încarcă...' : 'Încarcă'}
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </div>
+                          {renderAboutUploadControls('replace')}
                         </div>
                       ) : (
-                        <div
-                          onDragOver={(e) => { e.preventDefault(); setAboutDragActive(true) }}
-                          onDragLeave={() => setAboutDragActive(false)}
-                          onDrop={(e) => { e.preventDefault(); setAboutDragActive(false); setAboutPendingFiles(Array.from(e.dataTransfer.files).slice(0,1)) }}
-                          className={`border-2 border-dashed rounded-lg p-6 text-center ${aboutDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
-                        >
-                          <p className="text-sm text-gray-600 mb-3">Trage și plasează imaginea aici sau alege din calculator</p>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => setAboutPendingFiles(e.target.files ? Array.from(e.target.files).slice(0,1) : [])}
-                            className="block w-full text-sm text-gray-900 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                          />
-                          {aboutPendingFiles.length > 0 && (
-                            <div className="mt-4 text-sm text-gray-700">
-                              <div className="flex items-center justify-between">
-                                <span>{aboutPendingFiles[0].name}</span>
-                                <button
-                                  disabled={aboutIsUploading}
-                                  onClick={async () => {
-                                    const file = aboutPendingFiles[0]
-                                    if (!file) return
-                                    setAboutIsUploading(true)
-                                    try {
-                                  const form = new FormData()
-                                      form.append('file', file)
-                                  form.append('category', 'indoor')
-                                  form.append('folder', 'about')
-                                      const res = await fetch('/api/gallery/upload', { method: 'POST', body: form })
-                                      if (res.ok) {
-                                        const doc = await res.json()
-                                        // delete previous if exists (by id or url)
-                                        const prevImg = siteData.about.image as any
-                                        if (prevImg?.id) {
-                                          await fetch(`/api/gallery?id=${prevImg.id}`, { method: 'DELETE' })
-                                        } else if (prevImg?.externalUrl || prevImg?.url) {
-                                          const url = encodeURIComponent(prevImg.externalUrl || prevImg.url)
-                                          await fetch(`/api/gallery?url=${url}`, { method: 'DELETE' })
-                                        }
-                                        const nextState = {
-                                          ...siteData,
-                                          about: { ...siteData.about, image: { id: doc.id, url: doc.externalUrl || doc.url, alt: doc.alt || '' } }
-                                        }
-                                        setSiteData(nextState)
-                                        await autoSaveAboutImage(nextState.about.image)
-                                        setIsEditing(true)
-                                      }
-                                    } finally {
-                                      setAboutIsUploading(false)
-                                      setAboutPendingFiles([])
-                                    }
-                                  }}
-                                  className="px-3 py-1.5 bg-blue-600 text-white rounded-md disabled:opacity-50"
-                                >
-                                  {aboutIsUploading ? 'Se încarcă...' : 'Încarcă'}
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
+                        renderAboutUploadControls('initial')
                       )}
                     </div>
                   </div>

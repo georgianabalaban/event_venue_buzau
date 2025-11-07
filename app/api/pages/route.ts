@@ -2,6 +2,60 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '../../../payload.config'
 
+type IncomingFeature = string
+
+type IncomingNavItem = {
+  label?: string
+  href?: string
+  cta?: boolean
+}
+
+type IncomingStoryPoint = {
+  title?: string
+  text?: string
+}
+
+type IncomingPagePayload = {
+  title?: string
+  lastUpdatedAt?: string
+  hero?: {
+    heading?: string
+    secondaryHeading?: string
+    subheading?: string
+    ctaText?: string
+  }
+  about?: {
+    title?: string
+    description?: string
+    features?: IncomingFeature[]
+    image?: string | null
+  }
+  services?: {
+    title?: string
+    items?: Array<{
+      name?: string
+      description?: string
+      icon?: string
+    }>
+  }
+  header?: {
+    siteName?: string
+    nav?: IncomingNavItem[]
+  }
+  story?: {
+    title?: string
+    content?: string
+    highlight?: string
+    missionTitle?: string
+    missionText?: string
+    points?: IncomingStoryPoint[]
+  }
+}
+
+type ExistingPageDoc = {
+  updatedAt?: string | Date
+}
+
 export async function GET() {
   try {
     const payload = await getPayload({ config })
@@ -145,7 +199,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const payload = await getPayload({ config })
-    const data = await request.json()
+    const data = await request.json() as IncomingPagePayload
 
     // Normalize incoming shape to match Payload schema
     // about.features can come as string[] from admin UI
@@ -155,23 +209,32 @@ export async function POST(request: NextRequest) {
         ? {
             ...data.about,
             features: Array.isArray(data.about.features)
-              ? data.about.features.map((f: string | { feature: string }) =>
-                  typeof f === 'string' ? { feature: f } : f
-                )
+              ? data.about.features
+                  .map((featureValue) => {
+                    if (typeof featureValue !== 'string') return null
+                    const trimmed = featureValue.trim()
+                    return trimmed.length > 0 ? { feature: trimmed } : null
+                  })
+                  .filter((featureItem): featureItem is { feature: string } => featureItem !== null)
               : [],
           }
         : undefined,
       story: data?.story ? {
         ...data.story,
-        points: Array.isArray(data.story.points) ? data.story.points : [],
+        points: Array.isArray(data.story.points)
+          ? data.story.points.map((point) => ({
+              title: point?.title ?? '',
+              text: point?.text ?? '',
+            }))
+          : [],
       } : undefined,
         header: data?.header ? {
           ...data.header,
           nav: Array.isArray(data.header.nav)
-            ? data.header.nav.map((l: any) => ({
-                label: l.label || '',
-                href: l.href || '',
-                cta: !!l.cta
+            ? data.header.nav.map((item) => ({
+                label: item?.label ?? '',
+                href: item?.href ?? '',
+                cta: Boolean(item?.cta),
               }))
             : []
         } : undefined,
@@ -211,7 +274,7 @@ export async function POST(request: NextRequest) {
 
     // Optimistic concurrency: reject older writes
     const incomingUpdatedAt = data?.lastUpdatedAt ? new Date(data.lastUpdatedAt) : null
-    const currentDoc = existingPages.docs[0] as any
+    const currentDoc = existingPages.docs[0] as ExistingPageDoc | undefined
     if (incomingUpdatedAt && currentDoc?.updatedAt) {
       const currentUpdatedAt = new Date(currentDoc.updatedAt)
       if (incomingUpdatedAt < currentUpdatedAt) {

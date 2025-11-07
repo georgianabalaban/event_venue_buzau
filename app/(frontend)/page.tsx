@@ -57,6 +57,30 @@ const defaultPageData = {
       }
     ]
   },
+  header: {
+    siteName: 'Event Venue Buzău',
+    nav: [
+      { label: 'Despre', href: '#about' },
+      { label: 'Servicii', href: '#services' },
+      { label: 'Galerie', href: '#gallery' },
+      { label: 'Evenimente', href: '#events' },
+      { label: 'Testimoniale', href: '#testimonials' },
+      { label: 'Contact', href: '#contact' },
+      { label: 'Rezervă acum', href: '#contact', cta: true }
+    ]
+  },
+  story: {
+    title: 'Povestea noastră',
+    content: 'Suntem o echipă dedicată care transformă fiecare eveniment într-o experiență memorabilă.',
+    highlight: 'Punem suflet în fiecare detaliu pentru ca tu să te bucuri de momente unice.',
+    missionTitle: 'Misiunea noastră',
+    missionText: 'Să oferim un spațiu versatil și servicii impecabile pentru evenimente de neuitat.',
+    points: [
+      { title: 'Autenticitate', text: 'Valorile noastre se reflectă în fiecare eveniment găzduit.' },
+      { title: 'Atenție la detalii', text: 'Ne asigurăm că totul este perfect, de la decor la logistică.' },
+      { title: 'Pasiune', text: 'Iubim ceea ce facem și se vede în rezultatul final.' },
+    ],
+  },
   contact: {
     title: 'Contactează-ne',
     phone: '+40 123 456 789',

@@ -2,6 +2,28 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '../../../payload.config'
 
+type GalleryCategory = 'indoor' | 'outdoor' | 'pool' | 'events'
+
+interface GalleryDocument {
+  id?: string
+  externalUrl?: string
+  url?: string
+  alt?: string
+  category?: GalleryCategory | string | null
+  [key: string]: unknown
+}
+
+const isGalleryCategory = (value: unknown): value is GalleryCategory =>
+  value === 'indoor' || value === 'outdoor' || value === 'pool' || value === 'events'
+
+const isNotFoundError = (error: unknown): boolean => {
+  if (typeof error !== 'object' || error === null) return false
+  const status = (error as { status?: number }).status
+  if (status === 404) return true
+  const message = (error as { message?: unknown }).message
+  return typeof message === 'string' && message.toLowerCase().includes('not found')
+}
+
 export async function GET(request: NextRequest) {
   try {
     const payload = await getPayload({ config })
@@ -19,25 +41,23 @@ export async function GET(request: NextRequest) {
 
     const result = await payload.find(query)
 
-    // Grouped response when no category filter
     if (!category || category === 'all') {
-      // Tip minimal sigur pentru elemente gallery
-      type GalleryDoc = { category?: string; [key: string]: unknown }
-      const grouped: Record<'indoor'|'outdoor'|'pool'|'events', GalleryDoc[]> = {
+      const grouped: Record<GalleryCategory, GalleryDocument[]> = {
         indoor: [],
         outdoor: [],
         pool: [],
         events: [],
       }
-      for (const doc of result.docs as GalleryDoc[]) {
-        const key = (doc.category as keyof typeof grouped) || 'events'
-        // verificăm dacă key este valid
-        if (grouped[key]) grouped[key].push(doc)
+
+      const docs = result.docs as GalleryDocument[]
+      for (const doc of docs) {
+        const categoryKey: GalleryCategory = isGalleryCategory(doc.category) ? doc.category : 'events'
+        grouped[categoryKey].push(doc)
       }
       return NextResponse.json(grouped)
     }
 
-    return NextResponse.json(result.docs)
+    return NextResponse.json(result.docs as GalleryDocument[])
   } catch (error) {
     console.error('❌ [API] Error fetching gallery:', error)
     return NextResponse.json({ error: 'Failed to fetch gallery' }, { status: 500 })
@@ -55,16 +75,16 @@ export async function DELETE(request: NextRequest) {
 
     // Determine S3 key either from DB item or from provided URL
     let externalUrl: string | null = null
+    let item: GalleryDocument | null = null
     if (id) {
-      let item: any = null
       try {
-        item = await payload.findByID({ collection: 'gallery', id })
-      } catch (e: any) {
-        if (!((e && e.status === 404) || (e && e.message && String(e.message).includes('Not Found')))) {
-          throw e
+        item = await payload.findByID({ collection: 'gallery', id }) as GalleryDocument
+      } catch (error: unknown) {
+        if (!isNotFoundError(error)) {
+          throw error
         }
       }
-      externalUrl = item?.externalUrl || item?.url || null
+      externalUrl = item?.externalUrl ?? item?.url ?? null
     }
     if (!externalUrl && urlParam) externalUrl = urlParam
 
@@ -85,9 +105,9 @@ export async function DELETE(request: NextRequest) {
     if (id) {
       try {
         await payload.delete({ collection: 'gallery', id })
-      } catch (e: any) {
-        if (!((e && e.status === 404) || (e && e.message && String(e.message).includes('Not Found')))) {
-          throw e
+      } catch (error: unknown) {
+        if (!isNotFoundError(error)) {
+          throw error
         }
       }
     }

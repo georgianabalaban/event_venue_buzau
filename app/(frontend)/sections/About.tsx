@@ -4,20 +4,29 @@ import { motion } from 'framer-motion'
 import { useState } from 'react'
 import { Check } from 'lucide-react'
 
+const isNonEmptyString = (value: unknown): value is string => typeof value === 'string' && value.trim().length > 0
+
+type AboutFeature = { feature?: string | null }
+
+interface AboutImage {
+  url?: string
+  externalUrl?: string
+  alt?: string
+}
+
+interface AboutData {
+  title?: string
+  description?: string | unknown
+  features?: Array<AboutFeature | null> | null
+  image?: AboutImage | null
+}
+
 interface AboutProps {
-  data?: {
-    title?: string
-    description?: string | unknown
-    features?: Array<{ feature: string }>
-    image?: {
-      url: string
-      alt?: string
-    }
-  }
+  data?: AboutData | null
 }
 
 export default function About({ data }: AboutProps) {
-  const features = data?.features || [
+  const fallbackFeatures: Array<{ feature: string }> = [
     { feature: 'Spațiu exterior cu piscină' },
     { feature: 'Sală interioară elegantă' },
     { feature: 'Capacitate până la 200 persoane' },
@@ -25,6 +34,21 @@ export default function About({ data }: AboutProps) {
     { feature: 'Catering personalizat' },
     { feature: 'Echipament audio-video modern' },
   ]
+
+  const payloadFeatures = Array.isArray(data?.features)
+    ? data.features
+        .map((feature) => {
+          const label = isNonEmptyString(feature?.feature) ? feature?.feature.trim() : ''
+          return label ? { feature: label } : null
+        })
+        .filter((featureItem): featureItem is { feature: string } => featureItem !== null)
+    : []
+
+  const features = payloadFeatures.length > 0 ? payloadFeatures : fallbackFeatures
+
+  const imageData = data?.image ?? null
+  const imageUrl = imageData?.externalUrl ?? imageData?.url ?? ''
+  const hasImage = isNonEmptyString(imageUrl)
 
   return (
     <section id="about" className="py-24 bg-gradient-to-b from-white to-blue-50">
@@ -85,12 +109,8 @@ export default function About({ data }: AboutProps) {
             viewport={{ once: true }}
             className="relative"
           >
-            {(() => {
-              const src = (data as any)?.image?.externalUrl || (data as any)?.image?.url
-              const [ok] = [!!src]
-              return ok
-            })() ? (
-              <ResponsiveAboutImage data={data as any} />
+            {hasImage && imageData ? (
+              <ResponsiveAboutImage image={imageData} />
             ) : (
               <div className="relative aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl">
                 <div className="absolute inset-0 bg-gradient-to-br from-primary-400 to-secondary-500" />
@@ -110,31 +130,38 @@ export default function About({ data }: AboutProps) {
   )
 }
 
-function ResponsiveAboutImage({ data }: { data: any }) {
+function ResponsiveAboutImage({ image }: { image: AboutImage }) {
   const [isValid, setIsValid] = useState(true)
-  const src: string | undefined = data?.image?.externalUrl || data?.image?.url
-  if (!src || !isValid) return (
-    <div className="relative aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl">
-      <div className="absolute inset-0 bg-gradient-to-br from-primary-400 to-secondary-500" />
-      <div className="absolute inset-0 flex items-center justify-center text-white text-2xl font-semibold">
-        Imagine spațiu
+  const src = image.externalUrl ?? image.url ?? ''
+
+  if (!isNonEmptyString(src) || !isValid) {
+    return (
+      <div className="relative aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-400 to-secondary-500" />
+        <div className="absolute inset-0 flex items-center justify-center text-white text-2xl font-semibold">
+          Imagine spațiu
+        </div>
       </div>
-    </div>
-  )
+    )
+  }
+
+  const altText = isNonEmptyString(image.alt) ? image.alt : 'Imagine spațiu'
+
   return (
     <div className="max-w-screen-md mx-auto rounded-2xl shadow-2xl overflow-hidden">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={src}
-        alt={data?.image?.alt || 'Imagine spațiu'}
+        alt={altText}
         className="w-full h-auto max-h-[60vh] object-contain"
         loading="lazy"
         decoding="async"
         onError={() => setIsValid(false)}
-        onLoad={(e) => {
-          const img = e.currentTarget
-          // dacă imaginea e anormal de mică (ex: thumbnail 1x1), nu o afișăm
-          if (img.naturalWidth < 50 || img.naturalHeight < 50) setIsValid(false)
+        onLoad={(event) => {
+          const img = event.currentTarget
+          if (img.naturalWidth < 50 || img.naturalHeight < 50) {
+            setIsValid(false)
+          }
         }}
       />
     </div>

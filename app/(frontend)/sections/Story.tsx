@@ -4,7 +4,14 @@ import { motion } from 'framer-motion'
 import { Heart } from 'lucide-react'
 
 interface StoryPoint { title?: string; text?: string }
-interface StoryData { title?: string; content?: string; points?: StoryPoint[] }
+interface StoryData {
+  title?: string
+  content?: string
+  highlight?: string
+  missionTitle?: string
+  missionText?: string
+  points?: StoryPoint[]
+}
 
 export default function Story({ data }: { data?: StoryData }) {
   const title = data?.title || 'Povestea noastră'
