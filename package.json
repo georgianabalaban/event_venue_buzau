@@ -17,6 +17,7 @@
     "@payloadcms/db-mongodb": "^3.59.1",
     "@payloadcms/next": "^3.59.1",
     "@payloadcms/richtext-lexical": "^3.59.1",
+    "@react-email/render": "^2.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dotenv": "^17.2.3",
