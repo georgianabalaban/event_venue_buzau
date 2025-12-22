@@ -3,6 +3,8 @@
 @layer base {
   :root {
     --font-inter: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-poppins: 'Poppins', system-ui, sans-serif;
+    --font-playfair: 'Playfair Display', Georgia, serif;
   }
 
   * {
@@ -16,6 +18,18 @@
 
   body {
     @apply bg-white text-gray-900 w-full min-h-screen overflow-x-hidden;
+    font-family: var(--font-inter);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-poppins);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  /* Optional: Use serif font for special accents */
+  .font-elegant {
+    font-family: var(--font-playfair);
   }
 }
 

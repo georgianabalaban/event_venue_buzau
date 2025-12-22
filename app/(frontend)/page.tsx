@@ -36,24 +36,24 @@ const defaultPageData = {
     title: 'Serviciile Noastre',
     items: [
       {
-        name: 'Organizare Evenimente',
-        description: 'Planificare completă și organizare profesională',
-        icon: 'Calendar'
+        name: 'Petreceri de copii',
+        description: 'Locul ideal pentru petreceri de copii cu jocuri, muzică și activități în aer liber, într-un cadru sigur și prietenos lângă Buzău.',
+        icon: 'partypopper'
       },
       {
-        name: 'Meniu Personalizat',
-        description: 'Bucătărie proprie cu meniu adaptat nevoilor tale',
-        icon: 'Utensils'
+        name: 'Petreceri de botez',
+        description: 'Sărbătoriți botezul celor mici într-o atmosferă caldă, cu decor rafinat și toate detaliile organizate pentru o zi fără griji.',
+        icon: 'heart'
       },
       {
-        name: 'Decor și Flori',
-        description: 'Decor personalizat și aranjamente florale',
-        icon: 'Flower'
+        name: 'Serbări școli / grădinițe',
+        description: 'Un spațiu generos pentru serbări și festivități de la școli și grădinițe, cu zonă de joacă, scenă și posibilitatea de meniu adaptat copiilor.',
+        icon: 'sparkles'
       },
       {
-        name: 'Fotograf și Video',
-        description: 'Servicii profesionale de fotograf și video',
-        icon: 'Camera'
+        name: 'Petreceri aniversare',
+        description: 'Organizăm petreceri aniversare memorabile pentru adulți și copii, cu decor personalizat, muzică și momente speciale, aproape de Buzău.',
+        icon: 'cake'
       }
     ]
   },

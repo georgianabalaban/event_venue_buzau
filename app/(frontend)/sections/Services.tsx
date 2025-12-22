@@ -79,9 +79,9 @@ export default function Services({ data }: ServicesProps) {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1, duration: 0.6 }}
                 viewport={{ once: true }}
-                className="group relative"
+                className="group relative h-full"
               >
-                <div className="relative p-8 bg-white border border-gray-200 rounded-2xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2">
+                <div className="relative h-full p-8 bg-white border border-gray-200 rounded-2xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 flex flex-col">
                   {/* Icon */}
                   <div className="mb-6 inline-flex p-4 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-xl text-white group-hover:scale-110 transition-transform duration-300">
                     <Icon className="w-8 h-8" />
@@ -91,7 +91,7 @@ export default function Services({ data }: ServicesProps) {
                   <h3 className="text-xl font-bold mb-3 text-gray-900">
                     {service.name}
                   </h3>
-                  <p className="text-gray-600">
+                  <p className="text-gray-600 flex-1">
                     {service.description}
                   </p>
 

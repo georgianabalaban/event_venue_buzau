@@ -112,24 +112,24 @@ export async function GET() {
           title: 'Serviciile noastre',
           items: [
             {
-              name: 'Evenimente Corporate',
-              description: 'Conferințe, training-uri, lansări de produse',
-              icon: 'briefcase'
-            },
-            {
-              name: 'Nunți',
-              description: 'Ceremonii și petreceri de nuntă personalizate',
-              icon: 'heart'
-            },
-            {
-              name: 'Petreceri Private',
-              description: 'Aniversări, zile de naștere, reuniuni de familie',
+              name: 'Petreceri de copii',
+              description: 'Petreceri de copii pline de culoare și distracție, cu activități în aer liber și zonă dedicată celor mici, într-un spațiu sigur lângă Buzău.',
               icon: 'partypopper'
             },
             {
-              name: 'Evenimente Speciale',
-              description: 'Botezuri, confirmări, evenimente tematice',
+              name: 'Petreceri de botez',
+              description: 'Petreceri de botez într-un cadru intim și elegant, cu decor rafinat și organizare completă pentru familia ta.',
+              icon: 'heart'
+            },
+            {
+              name: 'Serbări școli / grădinițe',
+              description: 'Spațiu ideal pentru serbări școlare și de grădiniță, cu capacitate generoasă, zonă verde și facilități pentru spectacole și momente festive.',
               icon: 'sparkles'
+            },
+            {
+              name: 'Petreceri aniversare',
+              description: 'Petreceri aniversare personalizate pentru adulți și copii, cu muzică, decor și servicii gândite pentru experiențe memorabile aproape de Buzău.',
+              icon: 'cake'
             }
           ]
         },
