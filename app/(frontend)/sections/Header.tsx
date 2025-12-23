@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Menu, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import Image from 'next/image'
 
 interface HeaderProps {
   siteName?: string;
@@ -47,11 +48,16 @@ export default function Header({ siteName, nav }: HeaderProps) {
           {/* Logo */}
           <a
             href="#"
-            className={`text-2xl font-bold transition-colors ${
-              isScrolled ? 'text-gray-900' : 'text-white'
-            }`}
+            className="relative h-60 w-auto transition-all duration-300 hover:scale-105"
           >
-            {siteName || 'Event Venue'}
+            <Image
+              src="https://event-venue-buzau.s3.eu-central-1.amazonaws.com/gallery/logo/singla_kids_club.png"
+              alt={siteName || 'Kids Club'}
+              width={840}
+              height={240}
+              className="h-full w-auto object-contain"
+              priority
+            />
           </a>
 
           {/* Desktop Navigation */}
