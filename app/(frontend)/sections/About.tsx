@@ -60,11 +60,11 @@ export default function About({ data }: AboutProps) {
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-4xl md:text-5xl font-bold mb-6 text-gray-900">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6 text-gray-900">
               {data?.title || 'Despre spațiul nostru'}
             </h2>
             
-            <div className="prose prose-lg text-gray-600 mb-8 whitespace-pre-line">
+            <div className="prose text-gray-600 mb-8 whitespace-pre-line">
               {typeof data?.description === 'string' && data.description.trim().length > 0 ? (
                 <p>{data.description}</p>
               ) : (

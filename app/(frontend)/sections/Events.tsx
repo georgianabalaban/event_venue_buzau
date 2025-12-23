@@ -63,10 +63,10 @@ export default function Events({ events }: EventsProps) {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold mb-4 text-gray-900">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 text-gray-900">
             Evenimente tematice
           </h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
             Alătură-te evenimentelor noastre speciale organizate pe tot parcursul anului
           </p>
         </motion.div>
@@ -96,7 +96,7 @@ export default function Events({ events }: EventsProps) {
 
               {/* Content */}
               <div className="p-6">
-                <h3 className="text-xl font-bold mb-3 text-gray-900 group-hover:text-primary-600 transition-colors">
+                <h3 className="text-lg font-bold mb-3 text-gray-900 group-hover:text-primary-600 transition-colors">
                   {event.title}
                 </h3>
 

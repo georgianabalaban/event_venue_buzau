@@ -57,10 +57,10 @@ export default function FAQ() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold mb-4 text-gray-900">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 text-gray-900">
             Întrebări frecvente
           </h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
             Răspunsuri la cele mai comune întrebări despre locația noastră
           </p>
         </motion.div>
@@ -81,7 +81,7 @@ export default function FAQ() {
                 onClick={() => setOpenId(openId === faq.id ? null : faq.id)}
                 className="w-full px-6 md:px-8 py-6 flex items-center justify-between text-left hover:bg-gray-50 transition-colors duration-200"
               >
-                <span className="text-lg md:text-xl font-bold text-gray-900 pr-4">
+                <span className="text-base md:text-lg font-bold text-gray-900 pr-4">
                   {faq.question}
                 </span>
                 <ChevronDown

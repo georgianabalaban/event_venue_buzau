@@ -65,18 +65,18 @@ export default function Testimonials() {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           viewport={{ once: true }}
-          className="text-center mb-16"
+          className="text-center mb-12 sm:mb-16 px-4"
         >
-          <h2 className="text-4xl md:text-5xl font-bold mb-4 text-gray-900">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 text-gray-900">
             Păreri de la oaspeții noștri
           </h2>
-          <p className="text-lg text-gray-600">
+          <p className="text-base sm:text-lg text-gray-600">
             Ce spun cei care au avut evenimente la Kids Club
           </p>
         </motion.div>
 
         {/* Reviews Grid - Flying Fox Style */}
-        <div className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto mb-16">
+        <div className="grid sm:grid-cols-2 gap-6 sm:gap-8 max-w-6xl mx-auto mb-12 sm:mb-16 px-4">
           {reviews.map((review, index) => (
             <motion.a
               key={review.id}
@@ -89,10 +89,10 @@ export default function Testimonials() {
               viewport={{ once: true }}
               className="group block"
             >
-              <div className="grid gap-4 md:gap-6">
+              <div className="grid gap-3 sm:gap-4 md:gap-6">
                 {/* Profile Image - Circular */}
                 <div className="flex justify-center">
-                  <div className="relative w-24 h-24 md:w-28 md:h-28 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
+                  <div className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center group-hover:scale-105 transition-transform duration-300">
                     {review.imageUrl ? (
                       <Image
                         src={review.imageUrl}
@@ -101,17 +101,17 @@ export default function Testimonials() {
                         className="object-cover"
                       />
                     ) : (
-                      <User className="w-12 h-12 text-gray-400" />
+                      <User className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400" />
                     )}
                   </div>
                 </div>
 
                 {/* Review Card */}
-                <div className="bg-white rounded-xl p-8 shadow-sm hover:shadow-md transition-all duration-300 group-hover:translate-y-[-4px]">
-                  <p className="text-center font-bold text-gray-900 mb-4 text-lg">
+                <div className="bg-white rounded-xl p-6 sm:p-8 shadow-sm hover:shadow-md transition-all duration-300 group-hover:translate-y-[-4px]">
+                  <p className="text-center font-bold text-gray-900 mb-3 sm:mb-4 text-base sm:text-lg">
                     {review.name}
                   </p>
-                  <p className="text-sm text-gray-600 italic leading-relaxed">
+                  <p className="text-xs sm:text-sm text-gray-600 italic leading-relaxed">
                     {review.text}
                   </p>
                 </div>
@@ -126,7 +126,7 @@ export default function Testimonials() {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           viewport={{ once: true }}
-          className="flex flex-col items-center gap-4"
+          className="flex flex-col items-center gap-3 sm:gap-4 px-4"
         >
           {/* Google Customer Reviews Logo */}
           <a
@@ -140,7 +140,7 @@ export default function Testimonials() {
               alt="Google"
               width={74}
               height={24}
-              className="mb-2"
+              className="mb-1 sm:mb-2"
             />
             <p className="text-xs text-gray-500 text-center">Customer Reviews</p>
           </a>
@@ -150,27 +150,28 @@ export default function Testimonials() {
             href={googleMapsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+            className="flex items-center gap-2 sm:gap-3 hover:opacity-80 transition-opacity"
           >
-            <span className="text-2xl font-bold text-gray-900">{averageRating}</span>
+            <span className="text-xl sm:text-2xl font-bold text-gray-900">{averageRating}</span>
             
             {/* 5 Stars SVG */}
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-0.5 sm:gap-1">
               {[...Array(5)].map((_, i) => (
                 <svg
                   key={i}
-                  width="20"
-                  height="20"
+                  width="18"
+                  height="18"
                   viewBox="0 0 24 24"
                   fill="#FDB241"
                   xmlns="http://www.w3.org/2000/svg"
+                  className="sm:w-5 sm:h-5"
                 >
                   <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
                 </svg>
               ))}
             </div>
             
-            <span className="text-lg text-gray-600">({totalReviews})</span>
+            <span className="text-base sm:text-lg text-gray-600">({totalReviews})</span>
           </a>
 
           {/* View All Reviews Link */}
@@ -178,7 +179,7 @@ export default function Testimonials() {
             href={googleMapsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-sm text-blue-600 hover:text-blue-800 underline transition-colors"
+            className="text-xs sm:text-sm text-blue-600 hover:text-blue-800 underline transition-colors"
           >
             Vezi toate recenziile pe Google Maps
           </a>
@@ -190,14 +191,14 @@ export default function Testimonials() {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4, duration: 0.6 }}
           viewport={{ once: true }}
-          className="text-center mt-16"
+          className="text-center mt-12 sm:mt-16 px-4"
         >
-          <p className="text-lg text-gray-600 mb-6">
+          <p className="text-base sm:text-lg text-gray-600 mb-4 sm:mb-6">
             Alătură-te celor care au avut evenimente memorabile
           </p>
           <a
             href="#contact"
-            className="inline-block px-8 py-4 bg-gray-900 text-white rounded-full font-bold hover:bg-gray-800 transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl"
+            className="inline-block w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 bg-gray-900 text-white rounded-full font-bold hover:bg-gray-800 transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl text-sm sm:text-base"
           >
             Rezervă acum
           </a>

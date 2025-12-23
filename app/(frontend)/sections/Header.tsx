@@ -45,16 +45,16 @@ export default function Header({ siteName, nav }: HeaderProps) {
     >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-20">
-          {/* Logo */}
+          {/* Logo - 3x larger on all screens */}
           <a
             href="#"
-            className="relative h-60 w-auto transition-all duration-300 hover:scale-105"
+            className="relative h-48 sm:h-60 md:h-72 lg:h-84 w-auto transition-all duration-300 hover:scale-105"
           >
             <Image
               src="https://event-venue-buzau.s3.eu-central-1.amazonaws.com/gallery/logo/singla_kids_club.png"
               alt={siteName || 'Kids Club'}
-              width={840}
-              height={240}
+              width={1200}
+              height={336}
               className="h-full w-auto object-contain"
               priority
             />

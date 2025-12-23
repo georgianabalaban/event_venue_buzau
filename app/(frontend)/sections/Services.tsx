@@ -60,10 +60,10 @@ export default function Services({ data }: ServicesProps) {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold mb-4 text-gray-900">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 text-gray-900">
             {data?.title || 'Tipuri de evenimente'}
           </h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
             Organizăm și găzduim o varietate de evenimente, personalizate pentru nevoile tale
           </p>
         </motion.div>
@@ -88,10 +88,10 @@ export default function Services({ data }: ServicesProps) {
                   </div>
 
                   {/* Content */}
-                  <h3 className="text-xl font-bold mb-3 text-gray-900">
+                  <h3 className="text-lg font-bold mb-3 text-gray-900">
                     {service.name}
                   </h3>
-                  <p className="text-gray-600 flex-1">
+                  <p className="text-sm text-gray-600 flex-1">
                     {service.description}
                   </p>
 

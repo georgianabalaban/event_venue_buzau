@@ -41,7 +41,7 @@ export default function Hero({ data }: HeroProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="font-heading text-5xl md:text-7xl lg:text-8xl font-bold mb-6 leading-tight tracking-tight"
+            className="font-heading text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold mb-6 leading-tight tracking-tight px-4"
           >
             <span className="block text-white">
               {data?.heading ?? ''}
@@ -55,7 +55,7 @@ export default function Hero({ data }: HeroProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="font-sans text-xl md:text-2xl mb-12 max-w-3xl mx-auto text-blue-100 font-light leading-relaxed"
+            className="font-sans text-sm sm:text-base md:text-lg lg:text-xl mb-8 sm:mb-12 max-w-3xl mx-auto text-blue-100 font-light leading-relaxed px-4"
           >
             {data?.subheading || 'Creăm evenimente memorabile lângă Buzău, într-un cadru natural cu piscină și grădină, unde fiecare detaliu contează pentru evenimentul tău de suflet'}
           </motion.p>
@@ -64,21 +64,21 @@ export default function Hero({ data }: HeroProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.6 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center items-center"
+            className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center px-4"
           >
             {/* Primary CTA Button - href="#contact" */}
             <a
               href="#contact"
-              className="group inline-flex items-center gap-3 bg-white text-gray-900 px-10 py-5 rounded-full font-bold text-lg shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 hover:-translate-y-1"
+              className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white text-gray-900 px-5 sm:px-6 md:px-8 py-3 sm:py-4 rounded-full font-bold text-sm sm:text-base shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 hover:-translate-y-1"
             >
               {data?.ctaText || 'Rezervă acum'}
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform duration-300" />
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-2 transition-transform duration-300" />
             </a>
             
             {/* Secondary CTA Button - href="#about" */}
             <a
               href="#about"
-              className="group inline-flex items-center gap-2 border-2 border-white text-white bg-white/10 backdrop-blur-sm px-10 py-5 rounded-full font-bold text-lg shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 hover:-translate-y-1"
+              className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 border-2 border-white text-white bg-white/10 backdrop-blur-sm px-5 sm:px-6 md:px-8 py-3 sm:py-4 rounded-full font-bold text-sm sm:text-base shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 hover:-translate-y-1"
             >
               Descoperă spațiul
             </a>

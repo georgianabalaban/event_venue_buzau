@@ -169,7 +169,7 @@ export default function Gallery() {
   return (
     <section 
       id="gallery" 
-      className="relative min-h-screen bg-gray-900 overflow-hidden"
+      className="relative min-h-[70vh] sm:min-h-[80vh] md:min-h-screen bg-gray-900 overflow-hidden"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -220,8 +220,8 @@ export default function Gallery() {
                 transition={{ duration: 0.6, ease: 'easeOut' }}
                 className={`font-bold text-white ${
                   currentSlide.isTitle 
-                    ? 'text-3xl sm:text-5xl md:text-6xl lg:text-7xl' 
-                    : 'text-2xl sm:text-3xl md:text-4xl lg:text-5xl'
+                    ? 'text-2xl sm:text-3xl md:text-4xl lg:text-5xl' 
+                    : 'text-xl sm:text-2xl md:text-3xl lg:text-4xl'
                 }`}
                 style={{
                   textShadow: '0 4px 20px rgba(0,0,0,0.8), 0 8px 40px rgba(0,0,0,0.5)',
