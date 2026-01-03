@@ -28,203 +28,95 @@ export default function Footer({ settings }: FooterProps) {
   return (
     <footer className="bg-gray-900 text-gray-300">
       <div className="container mx-auto px-4">
-        {/* Main Footer Content */}
-        <div className="py-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {/* Brand - Logo 3x smaller */}
-          <div>
-            <div className="mb-4 md:mb-6">
-              <Image
-                src="https://event-venue-buzau.s3.eu-central-1.amazonaws.com/gallery/logo/SinglaKidsClub.png"
-                alt={settings?.siteName || 'Kids Club'}
-                width={200}
-                height={56}
-                className="h-8 sm:h-9 md:h-10 lg:h-12 w-auto object-contain"
-              />
-            </div>
-            <p className="text-sm md:text-base text-gray-400 mb-6">
-              {settings?.tagline || 'Spațiul tău pentru evenimente perfecte'}
-            </p>
-            
-            {/* Social Media */}
-            <div className="flex gap-3 flex-wrap">
-              {/* Facebook */}
-              <a
-                href={settings?.socialMedia?.facebook || 'https://facebook.com'}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group w-11 h-11 bg-white/10 backdrop-blur-sm rounded-lg flex items-center justify-center hover:bg-[#1877F2] transition-all duration-300 hover:scale-110 hover:shadow-lg"
-                aria-label="Facebook"
-                title="Facebook"
-              >
-                <Facebook className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
-              </a>
-              
-              {/* Instagram */}
-              <a
-                href={settings?.socialMedia?.instagram || 'https://instagram.com'}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group w-11 h-11 bg-white/10 backdrop-blur-sm rounded-lg flex items-center justify-center hover:bg-gradient-to-br hover:from-[#F58529] hover:via-[#DD2A7B] hover:to-[#8134AF] transition-all duration-300 hover:scale-110 hover:shadow-lg"
-                aria-label="Instagram"
-                title="Instagram"
-              >
-                <Instagram className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
-              </a>
-
-              {/* WhatsApp */}
-              <a
-                href={settings?.socialMedia?.whatsapp || 'https://wa.me/40123456789'}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group w-11 h-11 bg-white/10 backdrop-blur-sm rounded-lg flex items-center justify-center hover:bg-[#25D366] transition-all duration-300 hover:scale-110 hover:shadow-lg"
-                aria-label="WhatsApp"
-                title="WhatsApp"
-              >
-                <MessageCircle className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
-              </a>
-
-              {/* TikTok */}
-              {settings?.socialMedia?.tiktok && (
-                <a
-                  href={settings.socialMedia.tiktok}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group w-11 h-11 bg-white/10 backdrop-blur-sm rounded-lg flex items-center justify-center hover:bg-black transition-all duration-300 hover:scale-110 hover:shadow-lg"
-                  aria-label="TikTok"
-                  title="TikTok"
+        {/* Minimalist Footer - Flying Fox Inspired */}
+        <div className="py-12 md:py-16">
+          <div className="max-w-5xl mx-auto">
+            {/* Top Section: Left Links - Center Logo - Right Links */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-4 items-start mb-8">
+              {/* Left Links */}
+              <nav className="flex flex-col items-center md:items-start space-y-3 text-center md:text-left">
+                <a 
+                  href="#about" 
+                  className="text-sm hover:text-white transition-colors duration-300"
                 >
-                  <svg className="w-5 h-5 text-white group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z" />
-                  </svg>
+                  Despre Noi
                 </a>
-              )}
-            </div>
-          </div>
-
-          {/* Quick Links */}
-          <div>
-            <h4 className="text-base md:text-lg text-white font-semibold mb-4">Navigare</h4>
-            <ul className="space-y-2">
-              <li>
-                <a href="#about" className="text-sm md:text-base hover:text-white transition-colors">
-                  Despre noi
-                </a>
-              </li>
-              <li>
-                <a href="#services" className="text-sm md:text-base hover:text-white transition-colors">
+                <a 
+                  href="#services" 
+                  className="text-sm hover:text-white transition-colors duration-300"
+                >
                   Servicii
                 </a>
-              </li>
-              <li>
-                <a href="#gallery" className="text-sm md:text-base hover:text-white transition-colors">
-                  Galerie
-                </a>
-              </li>
-              <li>
-                <a href="#events" className="text-sm md:text-base hover:text-white transition-colors">
-                  Evenimente
-                </a>
-              </li>
-              <li>
-                <a href="#testimonials" className="text-sm md:text-base hover:text-white transition-colors">
+              </nav>
+
+              {/* Center Logo */}
+              <div className="flex flex-col items-center justify-center">
+                <div className="mb-6">
+                  <Image
+                    src="https://event-venue-buzau.s3.eu-central-1.amazonaws.com/gallery/logo/SinglaKidsClub.png"
+                    alt={settings?.siteName || 'Kids Club'}
+                    width={180}
+                    height={50}
+                    className="h-12 w-auto object-contain"
+                  />
+                </div>
+                
+                {/* Social Media - Centered Below Logo */}
+                <div className="flex gap-4 justify-center">
+                  <a
+                    href={settings?.socialMedia?.facebook || 'https://www.facebook.com/p/Kids-Club-100093204601027/'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-gray-400 hover:text-white transition-colors duration-300"
+                    aria-label="Facebook"
+                  >
+                    <Facebook className="w-5 h-5" />
+                  </a>
+                  
+                  <a
+                    href={settings?.socialMedia?.instagram || 'https://www.instagram.com/kidsclubbuzau?igsh=MTJpNGpxbTJuZmphOA=='}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-gray-400 hover:text-white transition-colors duration-300"
+                    aria-label="Instagram"
+                  >
+                    <Instagram className="w-5 h-5" />
+                  </a>
+
+                  <a
+                    href={settings?.socialMedia?.whatsapp || 'https://wa.me/40766441140'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-gray-400 hover:text-white transition-colors duration-300"
+                    aria-label="WhatsApp"
+                  >
+                    <MessageCircle className="w-5 h-5" />
+                  </a>
+                </div>
+              </div>
+
+              {/* Right Links */}
+              <nav className="flex flex-col items-center md:items-end space-y-3 text-center md:text-right">
+                <a 
+                  href="#testimonials" 
+                  className="text-sm hover:text-white transition-colors duration-300"
+                >
                   Testimoniale
                 </a>
-              </li>
-              <li>
-                <a href="#contact" className="text-sm md:text-base hover:text-white transition-colors">
+                <a 
+                  href="#contact" 
+                  className="text-sm hover:text-white transition-colors duration-300"
+                >
                   Contact
                 </a>
-              </li>
-            </ul>
-          </div>
+              </nav>
+            </div>
 
-          {/* Services */}
-          <div>
-            <h4 className="text-base md:text-lg text-white font-semibold mb-4">Servicii</h4>
-            <ul className="space-y-2">
-              <li>
-                <span className="text-sm md:text-base hover:text-white transition-colors cursor-pointer">
-                  Evenimente Corporate
-                </span>
-              </li>
-              <li>
-                <span className="text-sm md:text-base hover:text-white transition-colors cursor-pointer">
-                  Nunți
-                </span>
-              </li>
-              <li>
-                <span className="text-sm md:text-base hover:text-white transition-colors cursor-pointer">
-                  Petreceri Private
-                </span>
-              </li>
-              <li>
-                <span className="text-sm md:text-base hover:text-white transition-colors cursor-pointer">
-                  Aniversări
-                </span>
-              </li>
-              <li>
-                <span className="text-sm md:text-base hover:text-white transition-colors cursor-pointer">
-                  Evenimente Tematice
-                </span>
-              </li>
-            </ul>
-          </div>
-
-          {/* Contact Info */}
-          <div>
-            <h4 className="text-base md:text-lg text-white font-semibold mb-4">Contact</h4>
-            <ul className="space-y-3">
-              {settings?.contact?.phone && (
-                <li className="flex items-start gap-3">
-                  <Phone className="w-4 h-4 md:w-5 md:h-5 flex-shrink-0 mt-0.5" />
-                  <a
-                    href={`tel:${settings.contact.phone}`}
-                    className="text-sm md:text-base hover:text-white transition-colors"
-                  >
-                    {settings.contact.phone}
-                  </a>
-                </li>
-              )}
-              
-              {settings?.contact?.email && (
-                <li className="flex items-start gap-3">
-                  <Mail className="w-4 h-4 md:w-5 md:h-5 flex-shrink-0 mt-0.5" />
-                  <a
-                    href={`mailto:${settings.contact.email}`}
-                    className="text-sm md:text-base hover:text-white transition-colors"
-                  >
-                    {settings.contact.email}
-                  </a>
-                </li>
-              )}
-              
-              {settings?.contact?.address && (
-                <li className="flex items-start gap-3">
-                  <MapPin className="w-4 h-4 md:w-5 md:h-5 flex-shrink-0 mt-0.5" />
-                  <span className="text-sm md:text-base">{settings.contact.address}</span>
-                </li>
-              )}
-            </ul>
-          </div>
-        </div>
-
-        {/* Bottom Bar */}
-        <div className="border-t border-gray-800 py-6">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-sm text-gray-400">
-              © {currentYear} {settings?.siteName || 'Event Venue Buzău'}. Toate drepturile rezervate.
-            </p>
-            
-            <div className="flex gap-6 text-sm">
-              <Link href="/admin" className="hover:text-white transition-colors">
-                Admin
-              </Link>
-              <button className="hover:text-white transition-colors">
-                Politica de confidențialitate
-              </button>
-              <button className="hover:text-white transition-colors">
-                Termeni și condiții
-              </button>
+            {/* Bottom Copyright */}
+            <div className="pt-8 border-t border-gray-800">
+              <p className="text-xs text-gray-500 text-center">
+                © {currentYear} {settings?.siteName || 'Kids Club'}. Toate drepturile rezervate.
+              </p>
             </div>
           </div>
         </div>

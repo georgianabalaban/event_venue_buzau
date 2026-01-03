@@ -7,7 +7,6 @@ import About from './sections/About'
 import Services from './sections/Services'
 import Gallery from './sections/Gallery'
 import Events from './sections/Events'
-import Story from './sections/Story'
 import Testimonials from './sections/Testimonials'
 import FAQ from './sections/FAQ'
 import Contact from './sections/Contact'
@@ -261,7 +260,6 @@ export default function Home() {
       <Services data={pageData?.services} />
       <Gallery />
       <Events events={events} />
-      <Story data={pageData?.story} />
       <Testimonials />
       <FAQ />
       <Contact data={pageData?.contact} />

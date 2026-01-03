@@ -111,8 +111,8 @@ export default function Contact({ data }: ContactProps) {
                   </div>
                   <div>
                     <h4 className="font-semibold text-gray-900 mb-1">Telefon</h4>
-                    <a href={`tel:${data?.phone || '+40 XXX XXX XXX'}`} className="text-gray-600 hover:text-primary-600 transition-colors">
-                      {data?.phone || '+40 XXX XXX XXX'}
+                    <a href={`tel:${data?.phone || '+40766441140'}`} className="text-gray-600 hover:text-primary-600 transition-colors">
+                      {data?.phone || '+40 766 441 140'}
                     </a>
                   </div>
                 </div>
@@ -136,7 +136,7 @@ export default function Contact({ data }: ContactProps) {
                   <div>
                     <h4 className="font-semibold text-gray-900 mb-1">Adresă</h4>
                     <p className="text-gray-600">
-                      {data?.address || 'Lângă Buzău, România'}
+                      {data?.address || 'Strada Bordei, Potoceni 127327'}
                     </p>
                   </div>
                 </div>
