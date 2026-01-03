@@ -31,7 +31,7 @@ export default function Story({ data }: { data?: StoryData }) {
   const renderContent = (text: string) => {
     const parts = text.split(/(\*\*[^*]+\*\*)/g)
     return (
-      <p className="text-base text-gray-700 leading-relaxed mb-6">
+      <p className="text-sm sm:text-base md:text-lg text-gray-700 leading-relaxed mb-4 md:mb-6">
         {parts.map((part, i) =>
           part.startsWith('**') && part.endsWith('**')
             ? <strong key={i}>{part.slice(2, -2)}</strong>
@@ -52,12 +52,12 @@ export default function Story({ data }: { data?: StoryData }) {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary-50 rounded-full mb-6">
-              <Heart className="w-5 h-5 text-primary-600" />
-              <span className="text-primary-700 font-semibold">Povestea noastră</span>
+            <div className="inline-flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 bg-primary-50 rounded-full mb-4 md:mb-6">
+              <Heart className="w-4 h-4 md:w-5 md:h-5 text-primary-600" />
+              <span className="text-sm md:text-base text-primary-700 font-semibold">Povestea noastră</span>
             </div>
             
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6 text-gray-900">{title}</h2>
+            <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold mb-4 md:mb-6 text-gray-900">{title}</h2>
           </motion.div>
 
           {/* Story Content */}
@@ -68,34 +68,34 @@ export default function Story({ data }: { data?: StoryData }) {
             viewport={{ once: true }}
             className="prose prose-lg max-w-none"
           >
-            <div className="bg-white p-8 md:p-12 rounded-3xl shadow-xl border border-gray-100">
+            <div className="bg-white p-6 sm:p-8 md:p-10 lg:p-12 rounded-3xl shadow-xl border border-gray-100">
               {content.split(/\n\n+/).map((para, i) => (
                 <div key={i}>{renderContent(para)}</div>
               ))}
               
-              <p className="text-base text-gray-600 leading-relaxed mb-6">
+              <p className="text-sm sm:text-base md:text-lg text-gray-600 leading-relaxed mb-4 md:mb-6">
                 Am transformat cu grijă acest spațiu într-o <strong>oază de liniște și frumusețe</strong>, 
                 situată lângă Buzău, unde natura se îmbină perfect cu confortul modern. 
                 Am pus aici toată energia și pasiunea noastră pentru a crea un cadru 
                 în care fiecare eveniment devine o amintire de neuitat.
               </p>
 
-              <p className="text-base text-gray-600 leading-relaxed mb-6">
+              <p className="text-sm sm:text-base md:text-lg text-gray-600 leading-relaxed mb-4 md:mb-6">
                 Cu <strong>experiență în organizarea a sute de evenimente</strong>, de la nunți de vis 
                 și petreceri corporate până la aniversări intime și celebrări speciale, 
                 am învățat că fiecare eveniment este unic și merită o atenție personalizată.
               </p>
 
               {highlight && (
-                <div className="mt-8 p-6 bg-gradient-to-r from-primary-50 to-purple-50 rounded-2xl border-l-4 border-primary-600">
-                  <p className="text-base text-gray-700 italic">{highlight}</p>
+                <div className="mt-6 md:mt-8 p-4 sm:p-5 md:p-6 bg-gradient-to-r from-primary-50 to-purple-50 rounded-2xl border-l-4 border-primary-600">
+                  <p className="text-sm sm:text-base md:text-lg text-gray-700 italic">{highlight}</p>
                 </div>
               )}
 
-              <div className="mt-10 flex flex-col md:flex-row gap-8 items-center">
+              <div className="mt-8 md:mt-10 flex flex-col md:flex-row gap-6 md:gap-8 items-center">
                 <div className="flex-1">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">{missionTitle}</h3>
-                  <p className="text-sm text-gray-600">{missionText}</p>
+                  <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-2">{missionTitle}</h3>
+                  <p className="text-xs sm:text-sm md:text-base text-gray-600">{missionText}</p>
                 </div>
                 
                 <div className="w-24 h-24 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-full flex items-center justify-center shadow-lg flex-shrink-0">
@@ -116,10 +116,10 @@ export default function Story({ data }: { data?: StoryData }) {
             {points.map((value, index) => (
               <div
                 key={index}
-                className="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 text-center"
+                className="bg-white p-4 sm:p-5 md:p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300 text-center"
               >
-                <h4 className="text-lg font-bold text-gray-900 mb-3">{value.title}</h4>
-                <p className="text-sm text-gray-600">{value.text}</p>
+                <h4 className="text-base sm:text-lg md:text-xl font-bold text-gray-900 mb-2 md:mb-3">{value.title}</h4>
+                <p className="text-xs sm:text-sm md:text-base text-gray-600">{value.text}</p>
               </div>
             ))}
           </motion.div>

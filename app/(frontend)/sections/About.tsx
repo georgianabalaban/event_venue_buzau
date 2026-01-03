@@ -60,11 +60,11 @@ export default function About({ data }: AboutProps) {
             transition={{ duration: 0.6 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6 text-gray-900">
+            <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold mb-4 md:mb-6 text-gray-900">
               {data?.title || 'Despre spațiul nostru'}
             </h2>
             
-            <div className="prose text-gray-600 mb-8 whitespace-pre-line">
+            <div className="prose text-sm sm:text-base md:text-lg text-gray-600 mb-6 md:mb-8 whitespace-pre-line">
               {typeof data?.description === 'string' && data.description.trim().length > 0 ? (
                 <p>{data.description}</p>
               ) : (
@@ -93,10 +93,10 @@ export default function About({ data }: AboutProps) {
                   viewport={{ once: true }}
                   className="flex items-center gap-3"
                 >
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary-100 flex items-center justify-center">
-                    <Check className="w-4 h-4 text-primary-600" />
+                  <div className="flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-primary-100 flex items-center justify-center">
+                    <Check className="w-3 h-3 sm:w-4 sm:h-4 text-primary-600" />
                   </div>
-                  <span className="text-gray-700">{item.feature}</span>
+                  <span className="text-sm sm:text-base text-gray-700">{item.feature}</span>
                 </motion.div>
               ))}
             </div>

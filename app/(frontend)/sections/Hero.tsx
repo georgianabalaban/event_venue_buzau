@@ -41,7 +41,7 @@ export default function Hero({ data }: HeroProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="font-heading text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold mb-6 leading-tight tracking-tight px-4"
+            className="font-heading text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold mb-4 md:mb-6 leading-tight tracking-tight px-4"
           >
             <span className="block text-white">
               {data?.heading ?? ''}
@@ -55,7 +55,7 @@ export default function Hero({ data }: HeroProps) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="font-sans text-sm sm:text-base md:text-lg lg:text-xl mb-8 sm:mb-12 max-w-3xl mx-auto text-blue-100 font-light leading-relaxed px-4"
+            className="font-sans text-xs sm:text-sm md:text-base lg:text-lg mb-6 sm:mb-8 md:mb-12 max-w-3xl mx-auto text-blue-100 font-light leading-relaxed px-4"
           >
             {data?.subheading || 'Creăm evenimente memorabile lângă Buzău, într-un cadru natural cu piscină și grădină, unde fiecare detaliu contează pentru evenimentul tău de suflet'}
           </motion.p>
@@ -69,16 +69,16 @@ export default function Hero({ data }: HeroProps) {
             {/* Primary CTA Button - href="#contact" */}
             <a
               href="#contact"
-              className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white text-gray-900 px-5 sm:px-6 md:px-8 py-3 sm:py-4 rounded-full font-bold text-sm sm:text-base shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 hover:-translate-y-1"
+              className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white text-gray-900 px-4 sm:px-5 md:px-6 lg:px-8 py-2.5 sm:py-3 md:py-4 rounded-full font-bold text-xs sm:text-sm md:text-base shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 hover:-translate-y-1"
             >
               {data?.ctaText || 'Rezervă acum'}
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-2 transition-transform duration-300" />
+              <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 group-hover:translate-x-2 transition-transform duration-300" />
             </a>
             
             {/* Secondary CTA Button - href="#about" */}
             <a
               href="#about"
-              className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 border-2 border-white text-white bg-white/10 backdrop-blur-sm px-5 sm:px-6 md:px-8 py-3 sm:py-4 rounded-full font-bold text-sm sm:text-base shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 hover:-translate-y-1"
+              className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 border-2 border-white text-white bg-white/10 backdrop-blur-sm px-4 sm:px-5 md:px-6 lg:px-8 py-2.5 sm:py-3 md:py-4 rounded-full font-bold text-xs sm:text-sm md:text-base shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 hover:-translate-y-1"
             >
               Descoperă spațiul
             </a>
@@ -93,12 +93,12 @@ export default function Hero({ data }: HeroProps) {
         transition={{ delay: 1.2, duration: 1 }}
         className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-2"
       >
-        <span className="text-white/80 text-sm">Scroll pentru mai mult</span>
+        <span className="text-white/80 text-xs sm:text-sm">Scroll pentru mai mult</span>
         <motion.div
           animate={{ y: [0, 8, 0] }}
           transition={{ repeat: Infinity, duration: 1.5 }}
         >
-          <ChevronDown className="w-6 h-6 text-white/80" />
+          <ChevronDown className="w-5 h-5 sm:w-6 sm:h-6 text-white/80" />
         </motion.div>
       </motion.div>
     </section>

@@ -67,10 +67,10 @@ export default function Testimonials() {
           viewport={{ once: true }}
           className="text-center mb-12 sm:mb-16 px-4"
         >
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 text-gray-900">
+          <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold mb-3 md:mb-4 text-gray-900">
             Păreri de la oaspeții noștri
           </h2>
-          <p className="text-base sm:text-lg text-gray-600">
+          <p className="text-sm sm:text-base md:text-lg text-gray-600">
             Ce spun cei care au avut evenimente la Kids Club
           </p>
         </motion.div>
@@ -107,11 +107,11 @@ export default function Testimonials() {
                 </div>
 
                 {/* Review Card */}
-                <div className="bg-white rounded-xl p-6 sm:p-8 shadow-sm hover:shadow-md transition-all duration-300 group-hover:translate-y-[-4px]">
-                  <p className="text-center font-bold text-gray-900 mb-3 sm:mb-4 text-base sm:text-lg">
+                <div className="bg-white rounded-xl p-4 sm:p-5 md:p-6 lg:p-8 shadow-sm hover:shadow-md transition-all duration-300 group-hover:translate-y-[-4px]">
+                  <p className="text-center font-bold text-gray-900 mb-2 sm:mb-3 md:mb-4 text-sm sm:text-base md:text-lg">
                     {review.name}
                   </p>
-                  <p className="text-xs sm:text-sm text-gray-600 italic leading-relaxed">
+                  <p className="text-xs sm:text-sm md:text-base text-gray-600 italic leading-relaxed">
                     {review.text}
                   </p>
                 </div>
@@ -152,26 +152,26 @@ export default function Testimonials() {
             rel="noopener noreferrer"
             className="flex items-center gap-2 sm:gap-3 hover:opacity-80 transition-opacity"
           >
-            <span className="text-xl sm:text-2xl font-bold text-gray-900">{averageRating}</span>
+            <span className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">{averageRating}</span>
             
             {/* 5 Stars SVG */}
             <div className="flex items-center gap-0.5 sm:gap-1">
               {[...Array(5)].map((_, i) => (
                 <svg
                   key={i}
-                  width="18"
-                  height="18"
+                  width="16"
+                  height="16"
                   viewBox="0 0 24 24"
                   fill="#FDB241"
                   xmlns="http://www.w3.org/2000/svg"
-                  className="sm:w-5 sm:h-5"
+                  className="sm:w-5 sm:h-5 md:w-6 md:h-6"
                 >
                   <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
                 </svg>
               ))}
             </div>
             
-            <span className="text-base sm:text-lg text-gray-600">({totalReviews})</span>
+            <span className="text-sm sm:text-base md:text-lg text-gray-600">({totalReviews})</span>
           </a>
 
           {/* View All Reviews Link */}
@@ -193,12 +193,12 @@ export default function Testimonials() {
           viewport={{ once: true }}
           className="text-center mt-12 sm:mt-16 px-4"
         >
-          <p className="text-base sm:text-lg text-gray-600 mb-4 sm:mb-6">
+          <p className="text-sm sm:text-base md:text-lg text-gray-600 mb-3 sm:mb-4 md:mb-6">
             Alătură-te celor care au avut evenimente memorabile
           </p>
           <a
             href="#contact"
-            className="inline-block w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 bg-gray-900 text-white rounded-full font-bold hover:bg-gray-800 transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl text-sm sm:text-base"
+            className="inline-block w-full sm:w-auto px-5 sm:px-6 md:px-8 py-2.5 sm:py-3 md:py-4 bg-gray-900 text-white rounded-full font-bold hover:bg-gray-800 transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl text-xs sm:text-sm md:text-base"
           >
             Rezervă acum
           </a>

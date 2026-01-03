@@ -57,10 +57,10 @@ export default function FAQ() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 text-gray-900">
+          <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold mb-3 md:mb-4 text-gray-900">
             Întrebări frecvente
           </h2>
-          <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
+          <p className="text-sm sm:text-base md:text-lg text-gray-600 max-w-2xl mx-auto">
             Răspunsuri la cele mai comune întrebări despre locația noastră
           </p>
         </motion.div>
@@ -79,13 +79,13 @@ export default function FAQ() {
               {/* Question Button */}
               <button
                 onClick={() => setOpenId(openId === faq.id ? null : faq.id)}
-                className="w-full px-6 md:px-8 py-6 flex items-center justify-between text-left hover:bg-gray-50 transition-colors duration-200"
+                className="w-full px-4 sm:px-5 md:px-6 lg:px-8 py-4 sm:py-5 md:py-6 flex items-center justify-between text-left hover:bg-gray-50 transition-colors duration-200"
               >
-                <span className="text-base md:text-lg font-bold text-gray-900 pr-4">
+                <span className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-gray-900 pr-4">
                   {faq.question}
                 </span>
                 <ChevronDown
-                  className={`w-6 h-6 text-primary-600 flex-shrink-0 transition-transform duration-300 ${
+                  className={`w-5 h-5 sm:w-6 sm:h-6 text-primary-600 flex-shrink-0 transition-transform duration-300 ${
                     openId === faq.id ? 'rotate-180' : ''
                   }`}
                 />
@@ -97,8 +97,8 @@ export default function FAQ() {
                   openId === faq.id ? 'max-h-96' : 'max-h-0'
                 }`}
               >
-                <div className="px-6 md:px-8 pb-6 pt-2">
-                  <p className="text-gray-600 leading-relaxed">{faq.answer}</p>
+                <div className="px-4 sm:px-5 md:px-6 lg:px-8 pb-4 sm:pb-5 md:pb-6 pt-2">
+                  <p className="text-xs sm:text-sm md:text-base text-gray-600 leading-relaxed">{faq.answer}</p>
                 </div>
               </div>
             </motion.div>

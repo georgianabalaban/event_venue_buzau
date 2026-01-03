@@ -220,8 +220,8 @@ export default function Gallery() {
                 transition={{ duration: 0.6, ease: 'easeOut' }}
                 className={`font-bold text-white ${
                   currentSlide.isTitle 
-                    ? 'text-2xl sm:text-3xl md:text-4xl lg:text-5xl' 
-                    : 'text-xl sm:text-2xl md:text-3xl lg:text-4xl'
+                    ? 'text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl' 
+                    : 'text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl'
                 }`}
                 style={{
                   textShadow: '0 4px 20px rgba(0,0,0,0.8), 0 8px 40px rgba(0,0,0,0.5)',

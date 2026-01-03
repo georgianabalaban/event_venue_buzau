@@ -63,10 +63,10 @@ export default function Events({ events }: EventsProps) {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 text-gray-900">
+          <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold mb-3 md:mb-4 text-gray-900">
             Evenimente tematice
           </h2>
-          <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
+          <p className="text-sm sm:text-base md:text-lg text-gray-600 max-w-2xl mx-auto">
             Alătură-te evenimentelor noastre speciale organizate pe tot parcursul anului
           </p>
         </motion.div>
@@ -95,33 +95,33 @@ export default function Events({ events }: EventsProps) {
               </div>
 
               {/* Content */}
-              <div className="p-6">
-                <h3 className="text-lg font-bold mb-3 text-gray-900 group-hover:text-primary-600 transition-colors">
+              <div className="p-4 sm:p-5 md:p-6">
+                <h3 className="text-base sm:text-lg md:text-xl font-bold mb-2 md:mb-3 text-gray-900 group-hover:text-primary-600 transition-colors">
                   {event.title}
                 </h3>
 
-                <div className="space-y-2 mb-4">
+                <div className="space-y-2 mb-3 md:mb-4">
                   <div className="flex items-center gap-2 text-gray-600">
-                    <Calendar className="w-4 h-4" />
-                    <span className="text-sm">{formatDate(event.date)}</span>
+                    <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <span className="text-xs sm:text-sm">{formatDate(event.date)}</span>
                   </div>
 
                   {event.availableSpots && (
                     <div className="flex items-center gap-2 text-gray-600">
-                      <Users className="w-4 h-4" />
-                      <span className="text-sm">{event.availableSpots} locuri disponibile</span>
+                      <Users className="w-3 h-3 sm:w-4 sm:h-4" />
+                      <span className="text-xs sm:text-sm">{event.availableSpots} locuri disponibile</span>
                     </div>
                   )}
                 </div>
 
                 {event.price && (
-                  <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                    <span className="text-2xl font-bold text-primary-600">
+                  <div className="flex items-center justify-between pt-3 md:pt-4 border-t border-gray-200">
+                    <span className="text-lg sm:text-xl md:text-2xl font-bold text-primary-600">
                       {formatPrice(event.price)}
                     </span>
                     <a
                       href="#contact"
-                      className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium"
+                      className="px-3 sm:px-4 py-1.5 sm:py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-xs sm:text-sm font-medium"
                     >
                       Rezervă
                     </a>

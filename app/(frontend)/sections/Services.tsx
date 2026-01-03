@@ -60,10 +60,10 @@ export default function Services({ data }: ServicesProps) {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 text-gray-900">
+          <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold mb-3 md:mb-4 text-gray-900">
             {data?.title || 'Tipuri de evenimente'}
           </h2>
-          <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto">
+          <p className="text-sm sm:text-base md:text-lg text-gray-600 max-w-2xl mx-auto">
             Organizăm și găzduim o varietate de evenimente, personalizate pentru nevoile tale
           </p>
         </motion.div>
@@ -81,17 +81,17 @@ export default function Services({ data }: ServicesProps) {
                 viewport={{ once: true }}
                 className="group relative h-full"
               >
-                <div className="relative h-full p-8 bg-white border border-gray-200 rounded-2xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 flex flex-col">
+                <div className="relative h-full p-6 md:p-8 bg-white border border-gray-200 rounded-2xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 flex flex-col">
                   {/* Icon */}
-                  <div className="mb-6 inline-flex p-4 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-xl text-white group-hover:scale-110 transition-transform duration-300">
-                    <Icon className="w-8 h-8" />
+                  <div className="mb-4 md:mb-6 inline-flex p-3 md:p-4 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-xl text-white group-hover:scale-110 transition-transform duration-300">
+                    <Icon className="w-6 h-6 md:w-8 md:h-8" />
                   </div>
 
                   {/* Content */}
-                  <h3 className="text-lg font-bold mb-3 text-gray-900">
+                  <h3 className="text-base sm:text-lg md:text-xl font-bold mb-2 md:mb-3 text-gray-900">
                     {service.name}
                   </h3>
-                  <p className="text-sm text-gray-600 flex-1">
+                  <p className="text-xs sm:text-sm md:text-base text-gray-600 flex-1">
                     {service.description}
                   </p>
 

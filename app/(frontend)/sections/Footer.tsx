@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { Facebook, Instagram, Mail, Phone, MapPin, MessageCircle } from 'lucide-react'
 
 interface FooterProps {
@@ -29,12 +30,18 @@ export default function Footer({ settings }: FooterProps) {
       <div className="container mx-auto px-4">
         {/* Main Footer Content */}
         <div className="py-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {/* Brand */}
+          {/* Brand - Logo 3x smaller */}
           <div>
-            <h3 className="text-xl font-bold text-white mb-4">
-              {settings?.siteName || 'Event Venue Buzău'}
-            </h3>
-            <p className="text-gray-400 mb-6">
+            <div className="mb-4 md:mb-6">
+              <Image
+                src="https://event-venue-buzau.s3.eu-central-1.amazonaws.com/gallery/logo/SinglaKidsClub.png"
+                alt={settings?.siteName || 'Kids Club'}
+                width={200}
+                height={56}
+                className="h-8 sm:h-9 md:h-10 lg:h-12 w-auto object-contain"
+              />
+            </div>
+            <p className="text-sm md:text-base text-gray-400 mb-6">
               {settings?.tagline || 'Spațiul tău pentru evenimente perfecte'}
             </p>
             
@@ -96,35 +103,35 @@ export default function Footer({ settings }: FooterProps) {
 
           {/* Quick Links */}
           <div>
-            <h4 className="text-white font-semibold mb-4">Navigare</h4>
+            <h4 className="text-base md:text-lg text-white font-semibold mb-4">Navigare</h4>
             <ul className="space-y-2">
               <li>
-                <a href="#about" className="hover:text-white transition-colors">
+                <a href="#about" className="text-sm md:text-base hover:text-white transition-colors">
                   Despre noi
                 </a>
               </li>
               <li>
-                <a href="#services" className="hover:text-white transition-colors">
+                <a href="#services" className="text-sm md:text-base hover:text-white transition-colors">
                   Servicii
                 </a>
               </li>
               <li>
-                <a href="#gallery" className="hover:text-white transition-colors">
+                <a href="#gallery" className="text-sm md:text-base hover:text-white transition-colors">
                   Galerie
                 </a>
               </li>
               <li>
-                <a href="#events" className="hover:text-white transition-colors">
+                <a href="#events" className="text-sm md:text-base hover:text-white transition-colors">
                   Evenimente
                 </a>
               </li>
               <li>
-                <a href="#testimonials" className="hover:text-white transition-colors">
+                <a href="#testimonials" className="text-sm md:text-base hover:text-white transition-colors">
                   Testimoniale
                 </a>
               </li>
               <li>
-                <a href="#contact" className="hover:text-white transition-colors">
+                <a href="#contact" className="text-sm md:text-base hover:text-white transition-colors">
                   Contact
                 </a>
               </li>
@@ -133,30 +140,30 @@ export default function Footer({ settings }: FooterProps) {
 
           {/* Services */}
           <div>
-            <h4 className="text-white font-semibold mb-4">Servicii</h4>
+            <h4 className="text-base md:text-lg text-white font-semibold mb-4">Servicii</h4>
             <ul className="space-y-2">
               <li>
-                <span className="hover:text-white transition-colors cursor-pointer">
+                <span className="text-sm md:text-base hover:text-white transition-colors cursor-pointer">
                   Evenimente Corporate
                 </span>
               </li>
               <li>
-                <span className="hover:text-white transition-colors cursor-pointer">
+                <span className="text-sm md:text-base hover:text-white transition-colors cursor-pointer">
                   Nunți
                 </span>
               </li>
               <li>
-                <span className="hover:text-white transition-colors cursor-pointer">
+                <span className="text-sm md:text-base hover:text-white transition-colors cursor-pointer">
                   Petreceri Private
                 </span>
               </li>
               <li>
-                <span className="hover:text-white transition-colors cursor-pointer">
+                <span className="text-sm md:text-base hover:text-white transition-colors cursor-pointer">
                   Aniversări
                 </span>
               </li>
               <li>
-                <span className="hover:text-white transition-colors cursor-pointer">
+                <span className="text-sm md:text-base hover:text-white transition-colors cursor-pointer">
                   Evenimente Tematice
                 </span>
               </li>
@@ -165,14 +172,14 @@ export default function Footer({ settings }: FooterProps) {
 
           {/* Contact Info */}
           <div>
-            <h4 className="text-white font-semibold mb-4">Contact</h4>
+            <h4 className="text-base md:text-lg text-white font-semibold mb-4">Contact</h4>
             <ul className="space-y-3">
               {settings?.contact?.phone && (
                 <li className="flex items-start gap-3">
-                  <Phone className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                  <Phone className="w-4 h-4 md:w-5 md:h-5 flex-shrink-0 mt-0.5" />
                   <a
                     href={`tel:${settings.contact.phone}`}
-                    className="hover:text-white transition-colors"
+                    className="text-sm md:text-base hover:text-white transition-colors"
                   >
                     {settings.contact.phone}
                   </a>
@@ -181,10 +188,10 @@ export default function Footer({ settings }: FooterProps) {
               
               {settings?.contact?.email && (
                 <li className="flex items-start gap-3">
-                  <Mail className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                  <Mail className="w-4 h-4 md:w-5 md:h-5 flex-shrink-0 mt-0.5" />
                   <a
                     href={`mailto:${settings.contact.email}`}
-                    className="hover:text-white transition-colors"
+                    className="text-sm md:text-base hover:text-white transition-colors"
                   >
                     {settings.contact.email}
                   </a>
@@ -193,8 +200,8 @@ export default function Footer({ settings }: FooterProps) {
               
               {settings?.contact?.address && (
                 <li className="flex items-start gap-3">
-                  <MapPin className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                  <span>{settings.contact.address}</span>
+                  <MapPin className="w-4 h-4 md:w-5 md:h-5 flex-shrink-0 mt-0.5" />
+                  <span className="text-sm md:text-base">{settings.contact.address}</span>
                 </li>
               )}
             </ul>

@@ -45,28 +45,28 @@ export default function Header({ siteName, nav }: HeaderProps) {
     >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-20">
-          {/* Logo - 3x larger on all screens */}
+          {/* Logo - 3x smaller */}
           <a
             href="#"
-            className="relative h-48 sm:h-60 md:h-72 lg:h-84 w-auto transition-all duration-300 hover:scale-105"
+            className="relative h-10 sm:h-11 md:h-12 lg:h-13 w-auto transition-all duration-300 hover:scale-105"
           >
             <Image
-              src="https://event-venue-buzau.s3.eu-central-1.amazonaws.com/gallery/logo/singla_kids_club.png"
+              src="https://event-venue-buzau.s3.eu-central-1.amazonaws.com/gallery/logo/SinglaKidsClub.png"
               alt={siteName || 'Kids Club'}
-              width={1200}
-              height={336}
+              width={400}
+              height={112}
               className="h-full w-auto object-contain"
               priority
             />
           </a>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden md:flex items-center gap-4 lg:gap-6 xl:gap-8">
             {regularLinks.map((link) => (
               <a
                 key={link.href+link.label}
                 href={link.href}
-                className={`font-medium transition-colors hover:text-primary-600 ${
+                className={`text-sm lg:text-base font-medium transition-colors hover:text-primary-600 ${
                   isScrolled ? 'text-gray-700' : 'text-white'
                 }`}
               >
@@ -77,7 +77,7 @@ export default function Header({ siteName, nav }: HeaderProps) {
               <a
                 key={link.href+link.label}
                 href={link.href}
-                className={`px-6 py-3 rounded-full font-bold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 ${
+                className={`px-4 lg:px-5 xl:px-6 py-2.5 lg:py-3 rounded-full text-sm lg:text-base font-bold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 ${
                   isScrolled
                     ? 'bg-white text-gray-900'
                     : 'border-2 border-white text-white bg-white/10 backdrop-blur-sm hover:bg-white hover:text-gray-900'
