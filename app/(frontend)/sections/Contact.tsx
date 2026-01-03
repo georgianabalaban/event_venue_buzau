@@ -244,11 +244,10 @@ export default function Contact({ data }: ContactProps) {
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
                     >
                       <option value="">Selectează</option>
-                      <option value="corporate">Corporate</option>
-                      <option value="party">Petrecere</option>
-                      <option value="wedding">Nuntă</option>
-                      <option value="birthday">Aniversare</option>
-                      <option value="other">Altele</option>
+                      <option value="petreceri-copii">Petreceri de copii</option>
+                      <option value="petreceri-botez">Petreceri de botez</option>
+                      <option value="serbari">Serbări școli / grădinițe</option>
+                      <option value="aniversare">Petreceri aniversare</option>
                     </select>
                     {errors.eventType && (
                       <p className="text-red-500 text-sm mt-1">{errors.eventType.message}</p>
