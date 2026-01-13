@@ -29,7 +29,11 @@ const defaultPageData = {
       { feature: 'Spațiu elegant și modern' },
       { feature: 'Meniu personalizat' },
       { feature: 'Servicii complete de evenimente' }
-    ]
+    ],
+    image: {
+      externalUrl: 'https://event-venue-buzau.s3.eu-central-1.amazonaws.com/gallery/events/whatsapp-image-2025-11-19-at-11-50-43-2--1763546510042.jpeg',
+      alt: 'Grădină plină de verdeață'
+    }
   },
   services: {
     title: 'Serviciile Noastre',
@@ -58,6 +62,7 @@ const defaultPageData = {
   },
   header: {
     siteName: 'Event Venue Buzău',
+    logo: undefined,
     nav: [
       { label: 'Despre', href: '#about' },
       { label: 'Servicii', href: '#services' },
@@ -67,18 +72,6 @@ const defaultPageData = {
       { label: 'Contact', href: '#contact' },
       { label: 'Rezervă acum', href: '#contact', cta: true }
     ]
-  },
-  story: {
-    title: 'Povestea noastră',
-    content: 'Suntem o echipă dedicată care transformă fiecare eveniment într-o experiență memorabilă.',
-    highlight: 'Punem suflet în fiecare detaliu pentru ca tu să te bucuri de momente unice.',
-    missionTitle: 'Misiunea noastră',
-    missionText: 'Să oferim un spațiu versatil și servicii impecabile pentru evenimente de neuitat.',
-    points: [
-      { title: 'Autenticitate', text: 'Valorile noastre se reflectă în fiecare eveniment găzduit.' },
-      { title: 'Atenție la detalii', text: 'Ne asigurăm că totul este perfect, de la decor la logistică.' },
-      { title: 'Pasiune', text: 'Iubim ceea ce facem și se vede în rezultatul final.' },
-    ],
   },
   contact: {
     title: 'Contactează-ne',
@@ -254,7 +247,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen">
-      <Header siteName={pageData?.header?.siteName || settings?.siteName} nav={pageData?.header?.nav} />
+      <Header siteName={pageData?.header?.siteName || settings?.siteName} logo={pageData?.header?.logo} nav={pageData?.header?.nav} />
       <Hero data={pageData?.hero} />
       <About data={pageData?.about} />
       <Services data={pageData?.services} />

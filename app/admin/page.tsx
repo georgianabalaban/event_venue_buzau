@@ -4,6 +4,8 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { Save, Eye, Settings, FileText, Image, Calendar, Users } from 'lucide-react'
 
 // Tipuri pentru datele site-ului
+type HeaderLogo = { id?: string; url?: string; externalUrl?: string; alt?: string }
+
 interface SiteData {
   hero: {
     heading: string
@@ -41,15 +43,8 @@ interface SiteData {
   }>
   header?: {
     siteName?: string;
+    logo?: HeaderLogo
     nav?: Array<{ label: string; href: string; cta?: boolean }>
-  }
-  story?: {
-    title?: string
-    content?: string
-    highlight?: string
-    missionTitle?: string
-    missionText?: string
-    points?: Array<{ title: string; text: string }>
   }
 }
 
@@ -130,15 +125,6 @@ const defaultData: SiteData = {
       { label: 'Contact', href: '#contact' },
       { label: 'Rezervă acum', href: '#contact', cta: true }
     ]
-  },
-  story: {
-    title: 'Povestea noastră',
-    content: 'Suntem o afacere de familie, gândită cu suflet pentru a crea amintiri reale.',
-    points: [
-      { title: 'Autenticitate', text: 'Suntem o afacere de familie, gândită cu suflet.' },
-      { title: 'Atenție la detalii', text: 'Fiecare element este ales cu grijă.' },
-      { title: 'Pasiune', text: 'Iubim ceea ce facem și se vede în fiecare eveniment.' },
-    ]
   }
 }
 
@@ -157,8 +143,6 @@ type PayloadImageDoc = {
 
 type PayloadNavItem = { label?: string | null; href?: string | null; cta?: boolean | null }
 
-type PayloadStoryPointDoc = { title?: string | null; text?: string | null }
-
 type PayloadServicesItem = { name?: string | null; description?: string | null; icon?: string | null }
 
 interface PayloadPageResponse {
@@ -175,15 +159,8 @@ interface PayloadPageResponse {
   }
   header?: {
     siteName?: string | null
+    logo?: PayloadImageDoc | null
     nav?: Array<PayloadNavItem> | null
-  }
-  story?: {
-    title?: string | null
-    content?: unknown
-    highlight?: string | null
-    missionTitle?: string | null
-    missionText?: string | null
-    points?: PayloadStoryPointDoc[] | null
   }
 }
 
@@ -228,16 +205,6 @@ const normalizeNav = (nav?: Array<PayloadNavItem> | null): Array<{ label: string
     .filter((item) => item.label !== '' || item.href !== '')
 }
 
-const normalizeStoryPoints = (points?: PayloadStoryPointDoc[] | null): Array<{ title: string; text: string }> => {
-  if (!Array.isArray(points)) return []
-  return points
-    .map((point) => ({
-      title: point?.title ?? '',
-      text: point?.text ?? '',
-    }))
-    .filter((point) => point.title !== '' || point.text !== '')
-}
-
 const mapPayloadToSiteData = (payload?: PayloadPageResponse | null): SiteData => {
   const hero: SiteData['hero'] = {
     heading: payload?.hero?.heading ?? defaultData.hero.heading,
@@ -270,19 +237,11 @@ const mapPayloadToSiteData = (payload?: PayloadPageResponse | null): SiteData =>
   }
 
   const navItems = normalizeNav(payload?.header?.nav)
+  const headerLogo = normalizeImage(payload?.header?.logo)
   const header: SiteData['header'] = {
     siteName: payload?.header?.siteName ?? defaultData.header?.siteName,
+    logo: headerLogo,
     nav: navItems.length > 0 ? navItems : defaultData.header?.nav,
-  }
-
-  const storyPoints = normalizeStoryPoints(payload?.story?.points)
-  const story: SiteData['story'] = {
-    title: payload?.story?.title ?? defaultData.story?.title,
-    content: typeof payload?.story?.content === 'string' ? payload.story.content : defaultData.story?.content,
-    highlight: payload?.story?.highlight ?? defaultData.story?.highlight,
-    missionTitle: payload?.story?.missionTitle ?? defaultData.story?.missionTitle,
-    missionText: payload?.story?.missionText ?? defaultData.story?.missionText,
-    points: storyPoints.length > 0 ? storyPoints : defaultData.story?.points ?? [],
   }
 
   return {
@@ -292,7 +251,6 @@ const mapPayloadToSiteData = (payload?: PayloadPageResponse | null): SiteData =>
     events: defaultData.events,
     gallery: defaultData.gallery,
     header,
-    story,
   }
 }
 
@@ -303,7 +261,6 @@ export default function AdminPanel() {
   const [loading, setLoading] = useState(true)
   const [siteData, setSiteData] = useState<SiteData>(defaultData)
   const [featuresText, setFeaturesText] = useState<string>(defaultData.about.features.join('\n'))
-  const storyContentRef = useRef<HTMLTextAreaElement | null>(null)
   // About image upload (single) - gallery-like UX
   const [aboutDragActive, setAboutDragActive] = useState(false)
   const [aboutPendingFiles, setAboutPendingFiles] = useState<File[]>([])
@@ -382,8 +339,11 @@ export default function AdminPanel() {
             image: siteData.about.image?.id,
           },
           services: siteData.services,
-          header: siteData.header,
-          story: siteData.story,
+          header: {
+            siteName: siteData.header?.siteName,
+            logo: siteData.header?.logo?.id,
+            nav: siteData.header?.nav,
+          },
         }),
       })
       if (!res.ok) throw new Error('Save failed')
@@ -437,7 +397,11 @@ export default function AdminPanel() {
           image: snapshot.about.image?.id,
         },
         services: snapshot.services,
-        header: snapshot.header,
+        header: {
+          siteName: snapshot.header?.siteName,
+          logo: snapshot.header?.logo?.id,
+          nav: snapshot.header?.nav,
+        },
       }),
     })
     if (res.ok) {
@@ -499,33 +463,10 @@ export default function AdminPanel() {
     }
   }
 
-  const wrapSelection = (ref: React.RefObject<HTMLTextAreaElement | null>, startMarker: string, endMarker?: string) => {
-    const el = ref.current
-    if (!el) return
-    const value = el.value
-    const selStart = el.selectionStart ?? 0
-    const selEnd = el.selectionEnd ?? 0
-    const before = value.slice(0, selStart)
-    const selected = value.slice(selStart, selEnd)
-    const after = value.slice(selEnd)
-    const end = endMarker ?? startMarker
-    const next = `${before}${startMarker}${selected}${end}${after}`
-    setSiteData(prev => ({ ...prev, story: { ...(prev.story || {}), content: next } }))
-    setIsEditing(true)
-    // restore caret after update (best effort)
-    requestAnimationFrame(() => {
-      if (!ref.current) return
-      const cursor = selStart + startMarker.length + selected.length + end.length
-      ref.current.selectionStart = ref.current.selectionEnd = cursor
-      ref.current.focus()
-    })
-  }
-
   const tabs = [
     { id: 'header', label: 'Header', icon: Settings },
     { id: 'hero', label: 'Hero Section', icon: FileText },
     { id: 'about', label: 'Despre', icon: Users },
-    { id: 'story', label: 'Povestea noastră', icon: FileText },
     { id: 'services', label: 'Servicii', icon: Settings },
     { id: 'events', label: 'Evenimente', icon: Calendar },
     { id: 'gallery', label: 'Galerie', icon: Image },
@@ -788,121 +729,6 @@ export default function AdminPanel() {
                       ) : (
                         renderAboutUploadControls('initial')
                       )}
-                    </div>
-                  </div>
-                )}
-
-                {activeTab === 'story' && (
-                  <div className="space-y-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Titlu secțiune</label>
-                      <input
-                        type="text"
-                        value={siteData.story?.title || ''}
-                      onChange={(e) => { const next={...siteData, story:{...(siteData.story||{}), title:e.target.value}}; setSiteData(next); setIsEditing(true) }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Conținut (poți folosi **bold**)</label>
-                    <div className="flex items-center gap-2 mb-2">
-                      <button
-                        type="button"
-                        onClick={() => wrapSelection(storyContentRef, '**')}
-                        className="px-2 py-1 text-sm border rounded hover:bg-gray-50"
-                        title="Bold"
-                      ><strong>B</strong></button>
-                      <button
-                        type="button"
-                        onClick={() => wrapSelection(storyContentRef, '*')}
-                        className="px-2 py-1 text-sm border rounded hover:bg-gray-50"
-                        title="Italic"
-                      ><em>I</em></button>
-                    </div>
-                    <textarea
-                      ref={storyContentRef}
-                      rows={9}
-                      value={siteData.story?.content || ''}
-                      onChange={(e) => { const next={...siteData, story:{...(siteData.story||{}), content:e.target.value}}; setSiteData(next); setIsEditing(true) }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder={`Suntem o afacere de familie, gândită cu suflet pentru a crea amintiri reale.\n\nAm transformat cu grijă acest spațiu într-o oază de liniște...`}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Text evidențiat (chenar separat)</label>
-                    <textarea
-                      rows={3}
-                      value={siteData.story?.highlight || ''}
-                      onChange={(e) => { const next={...siteData, story:{...(siteData.story||{}), highlight:e.target.value}}; setSiteData(next); setIsEditing(true) }}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Nu există mândrie mai mare decât..."
-                      />
-                    </div>
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Titlu misiune</label>
-                        <input
-                          type="text"
-                          value={siteData.story?.missionTitle || ''}
-                          onChange={(e) => { const next={...siteData, story:{...(siteData.story||{}), missionTitle:e.target.value}}; setSiteData(next); setIsEditing(true) }}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Text misiune</label>
-                        <textarea
-                          rows={3}
-                          value={siteData.story?.missionText || ''}
-                          onChange={(e) => { const next={...siteData, story:{...(siteData.story||{}), missionText:e.target.value}}; setSiteData(next); setIsEditing(true) }}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Puncte evidențiate</label>
-                      <div className="space-y-3">
-                        {(siteData.story?.points || []).map((p, idx) => (
-                          <div key={idx} className="grid grid-cols-1 md:grid-cols-2 gap-2 items-start">
-                            <input
-                              type="text"
-                              value={p.title}
-                              onChange={(e) => {
-                                const points = [...(siteData.story?.points || [])]
-                                points[idx] = { ...points[idx], title: e.target.value }
-                                const next = { ...siteData, story: { ...(siteData.story || {}), points } }
-                                setSiteData(next)
-                                setIsEditing(true)
-                              }}
-                              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              placeholder="Titlu"
-                            />
-                            <input
-                              type="text"
-                              value={p.text}
-                              onChange={(e) => {
-                                const points = [...(siteData.story?.points || [])]
-                                points[idx] = { ...points[idx], text: e.target.value }
-                                const next = { ...siteData, story: { ...(siteData.story || {}), points } }
-                                setSiteData(next)
-                                setIsEditing(true)
-                              }}
-                              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              placeholder="Text"
-                            />
-                          </div>
-                        ))}
-                        <div>
-                          <button
-                            className="px-3 py-1.5 text-sm rounded bg-blue-50 text-blue-700 border border-blue-100 hover:bg-blue-100"
-                            onClick={() => {
-                              const nextPoints = [ ...(siteData.story?.points || []), { title: '', text: '' } ]
-                              const next = { ...siteData, story: { ...(siteData.story || {}), points: nextPoints } }
-                              setSiteData(next)
-                              setIsEditing(true)
-                            }}
-                          >Adaugă punct</button>
-                        </div>
-                      </div>
                     </div>
                   </div>
                 )}
@@ -1224,50 +1050,222 @@ function HeaderAdminSection({ value, onChange }: { value?: SiteData['header']; o
     { label: 'Rezervă acum', href: '#contact', cta: true }
   ])
   const [siteName, setSiteName] = useState(value?.siteName ?? 'Event Venue Buzău')
+  const [logo, setLogo] = useState(value?.logo)
+  const [logoDragActive, setLogoDragActive] = useState(false)
+  const [logoPendingFiles, setLogoPendingFiles] = useState<File[]>([])
+  const [logoIsUploading, setLogoIsUploading] = useState(false)
 
   // Sync local state with external state when value changes (e.g. after save reload)
   useEffect(() => {
     if (value?.siteName !== undefined) setSiteName(value.siteName)
     if (value?.nav !== undefined) setLocalNav(value.nav)
+    if (value?.logo !== undefined) setLogo(value.logo)
   }, [value])
 
   const handleSiteNameChange = (newName: string) => {
     setSiteName(newName)
-    onChange({ siteName: newName, nav: localNav })
+    onChange({ siteName: newName, logo, nav: localNav })
+  }
+
+  const handleLogoChange = (newLogo: HeaderLogo | undefined) => {
+    setLogo(newLogo)
+    onChange({ siteName, logo: newLogo, nav: localNav })
   }
 
   const handleNavChange = (i: number, k: 'label'|'href'|'cta', v: string|boolean) => {
     const updatedNav = localNav.map((item, idx) => idx === i ? { ...item, [k]: v } : item)
     setLocalNav(updatedNav)
-    onChange({ siteName, nav: updatedNav })
+    onChange({ siteName, logo, nav: updatedNav })
   }
 
   const handleAdd = () => {
     const updatedNav = [...localNav, { label: '', href: '' }]
     setLocalNav(updatedNav)
-    onChange({ siteName, nav: updatedNav })
+    onChange({ siteName, logo, nav: updatedNav })
   }
 
   const handleDelete = (i: number) => {
     const updatedNav = localNav.filter((_, idx) => idx !== i)
     setLocalNav(updatedNav)
-    onChange({ siteName, nav: updatedNav })
+    onChange({ siteName, logo, nav: updatedNav })
   }
   const handleReorder = (from: number, to: number) => {
     const copy = [...localNav]
     const [m] = copy.splice(from, 1)
     copy.splice(to, 0, m)
     setLocalNav(copy)
-    onChange({ siteName, nav: copy })
+    onChange({ siteName, logo, nav: copy })
+  }
+
+  const uploadLogoFile = async (file: File | null) => {
+    if (!file) return
+    setLogoIsUploading(true)
+    try {
+      const form = new FormData()
+      form.append('file', file)
+      form.append('category', 'indoor')
+      form.append('folder', 'logo')
+      const response = await fetch('/api/gallery/upload', { method: 'POST', body: form })
+      if (!response.ok) return
+      const doc = (await response.json()) as GalleryUploadResponse
+
+      // Remove previous logo if exists
+      if (logo) {
+        await removeLogoFromServer(logo)
+      }
+
+      const uploadedLogo: HeaderLogo = {
+        id: doc.id ?? undefined,
+        url: doc.url ?? undefined,
+        externalUrl: doc.externalUrl ?? undefined,
+        alt: doc.alt ?? 'Logo site',
+      }
+
+      handleLogoChange(uploadedLogo)
+    } finally {
+      setLogoIsUploading(false)
+      setLogoPendingFiles([])
+    }
+  }
+
+  const removeLogoFromServer = async (logoToRemove?: HeaderLogo) => {
+    if (!logoToRemove) return
+    if (logoToRemove.id) {
+      await fetch(`/api/gallery?id=${logoToRemove.id}`, { method: 'DELETE' })
+      return
+    }
+    const removableUrl = logoToRemove.externalUrl ?? logoToRemove.url
+    if (removableUrl) {
+      const encodedUrl = encodeURIComponent(removableUrl)
+      await fetch(`/api/gallery?url=${encodedUrl}`, { method: 'DELETE' })
+    }
+  }
+
+  const handleDeleteLogo = async () => {
+    await removeLogoFromServer(logo)
+    handleLogoChange(undefined)
+    setLogoPendingFiles([])
+  }
+
+  const renderLogoUploadControls = (variant: 'replace' | 'initial') => {
+    const dropZonePadding = variant === 'replace' ? 'p-4' : 'p-6'
+    const description = variant === 'replace'
+      ? 'Înlocuiește logo-ul: trage aici sau alege din calculator'
+      : 'Trage și plasează logo-ul aici sau alege din calculator'
+    const containerSpacing = variant === 'replace' ? 'mt-3' : ''
+    const textMargin = variant === 'replace' ? 'mb-2' : 'mb-3'
+
+    return (
+      <div className={containerSpacing}>
+        <div
+          onDragOver={(event) => { event.preventDefault(); setLogoDragActive(true) }}
+          onDragLeave={() => setLogoDragActive(false)}
+          onDrop={(event) => {
+            event.preventDefault()
+            setLogoDragActive(false)
+            setLogoPendingFiles(Array.from(event.dataTransfer.files).slice(0, 1))
+          }}
+          className={`border-2 border-dashed rounded-lg text-center ${dropZonePadding} ${logoDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
+        >
+          <p className={`text-sm text-gray-600 ${textMargin}`}>{description}</p>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(event) => setLogoPendingFiles(event.target.files ? Array.from(event.target.files).slice(0, 1) : [])}
+            className="block w-full text-sm text-gray-900 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+          />
+          {logoPendingFiles.length > 0 && (
+            <div className="mt-3 text-sm text-gray-700">
+              <div className="flex items-center justify-between">
+                <span>{logoPendingFiles[0].name}</span>
+                <button
+                  type="button"
+                  disabled={logoIsUploading}
+                  onClick={() => uploadLogoFile(logoPendingFiles[0] ?? null)}
+                  className="px-3 py-1.5 bg-blue-600 text-white rounded-md disabled:opacity-50"
+                >
+                  {logoIsUploading ? 'Se încarcă...' : 'Încarcă'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  // Default logo fallback (the hardcoded one from Header.tsx)
+  const defaultLogoUrl = 'https://event-venue-buzau.s3.eu-central-1.amazonaws.com/gallery/logo/SinglaKidsClub.png'
+  
+  const logoUrl = logo?.externalUrl ?? logo?.url ?? ''
+  const logoAlt = logo?.alt ?? 'Logo site'
+  const hasLogo = isNonEmptyString(logoUrl)
+  const showDefaultLogo = !hasLogo && defaultLogoUrl
+
+  const handleAdoptDefaultLogo = async () => {
+    // Create a logo entry with the default URL
+    const defaultLogo: HeaderLogo = {
+      id: undefined,
+      url: undefined,
+      externalUrl: defaultLogoUrl,
+      alt: 'Logo site',
+    }
+    handleLogoChange(defaultLogo)
   }
 
   return (
     <div className="space-y-6">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Nume/logo site (stânga header)</label>
-        <input type="text" value={siteName}
-          onChange={e => handleSiteNameChange(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+        <label className="block text-sm font-medium text-gray-700 mb-2">Logo site</label>
+        {hasLogo ? (
+          <div className="mb-4">
+            <div className="relative max-w-md rounded-lg overflow-hidden border border-gray-200 bg-white p-4">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={logoUrl}
+                alt={logoAlt}
+                className="w-full h-auto object-contain max-h-32"
+              />
+              <div className="mt-2 flex justify-end gap-2">
+                <button
+                  onClick={handleDeleteLogo}
+                  className="px-3 py-1.5 bg-red-600 text-white text-sm rounded-md hover:bg-red-700"
+                >
+                  Șterge logo
+                </button>
+              </div>
+            </div>
+            {renderLogoUploadControls('replace')}
+          </div>
+        ) : showDefaultLogo ? (
+          <div className="mb-4">
+            <div className="relative max-w-md rounded-lg overflow-hidden border-2 border-dashed border-yellow-400 bg-yellow-50 p-4">
+              <div className="mb-2 text-sm text-yellow-800 font-medium">
+                Logo curent (hardcodat în cod)
+              </div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={defaultLogoUrl}
+                alt="Logo curent"
+                className="w-full h-auto object-contain max-h-32"
+              />
+              <div className="mt-3 flex justify-between items-center gap-2">
+                <p className="text-xs text-yellow-700">
+                  Acest logo este fallback-ul din cod. Salvează-l pentru a-l putea edita.
+                </p>
+                <button
+                  onClick={handleAdoptDefaultLogo}
+                  className="px-3 py-1.5 bg-yellow-600 text-white text-sm rounded-md hover:bg-yellow-700 whitespace-nowrap"
+                >
+                  Salvează logo-ul
+                </button>
+              </div>
+            </div>
+            {renderLogoUploadControls('replace')}
+          </div>
+        ) : (
+          renderLogoUploadControls('initial')
+        )}
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">Linkuri meniu header:</label>

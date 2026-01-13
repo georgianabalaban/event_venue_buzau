@@ -132,48 +132,6 @@ export const Pages: CollectionConfig = {
       ],
     },
     {
-      name: 'story',
-      type: 'group',
-      label: 'Povestea noastră',
-      fields: [
-        {
-          name: 'title',
-          type: 'text',
-          label: 'Titlu secțiune',
-        },
-        {
-          name: 'content',
-          type: 'richText',
-          label: 'Conținut (poți folosi bold/italic/listă)',
-        },
-        {
-          name: 'highlight',
-          type: 'textarea',
-          label: 'Text evidențiat (apare în chenar separat)'
-        },
-        {
-          name: 'missionTitle',
-          type: 'text',
-          label: 'Titlu misiune'
-        },
-        {
-          name: 'missionText',
-          type: 'textarea',
-          label: 'Text misiune'
-        },
-        {
-          name: 'points',
-          type: 'array',
-          label: 'Puncte evidențiate',
-          labels: { singular: 'Punct', plural: 'Puncte' },
-          fields: [
-            { name: 'title', type: 'text', label: 'Titlu' },
-            { name: 'text', type: 'textarea', label: 'Text' },
-          ],
-        },
-      ],
-    },
-    {
       name: 'contact',
       type: 'group',
       label: 'Contact',
@@ -209,6 +167,12 @@ export const Pages: CollectionConfig = {
           name: 'siteName',
           type: 'text',
           label: 'Nume/logo site (stânga header)'
+        },
+        {
+          name: 'logo',
+          type: 'relationship',
+          relationTo: 'gallery',
+          label: 'Logo site'
         },
         {
           name: 'nav',

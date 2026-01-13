@@ -44,7 +44,7 @@ const gallerySlides: GallerySlide[] = [
   },
   { 
     title: 'Un foișor separat acoperit',
-    imageUrl: 'https://event-venue-buzau.s3.eu-central-1.amazonaws.com/gallery/indoor/whatsapp-image-2025-11-19-at-12-14-13-6--1763547336861.jpeg',
+    imageUrl: 'https://event-venue-buzau.s3.eu-central-1.amazonaws.com/gallery/outdoor/22730850-f44e-42dd-aee9-2dda7b3cec5f-1761770789925.jpg',
     alt: 'Un foișor separat acoperit'
   },
   { 
@@ -54,7 +54,7 @@ const gallerySlides: GallerySlide[] = [
   },
   { 
     title: 'Multă bucurie și energie bună',
-    imageUrl: 'https://event-venue-buzau.s3.eu-central-1.amazonaws.com/gallery/outdoor/WhatsApp+Image+2025-11-11+at+12.26.39.jpeg',
+    imageUrl: 'https://event-venue-buzau.s3.eu-central-1.amazonaws.com/gallery/outdoor/img_4598-1761770820795.JPG',
     alt: 'Multă bucurie și energie bună'
   },
   { 
@@ -67,10 +67,34 @@ const gallerySlides: GallerySlide[] = [
 export default function Gallery() {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isPlaying, setIsPlaying] = useState(true)
+  const [isInViewport, setIsInViewport] = useState(true)
   const [direction, setDirection] = useState(0)
   const [touchStart, setTouchStart] = useState(0)
   const [touchEnd, setTouchEnd] = useState(0)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
+  const sectionRef = useRef<HTMLElement>(null)
+
+  // Intersection Observer to detect when gallery is in viewport
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsInViewport(entry.isIntersecting)
+      },
+      {
+        threshold: 0.3, // Trigger when 30% of the gallery is visible
+      }
+    )
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current)
+    }
+
+    return () => {
+      if (sectionRef.current) {
+        observer.unobserve(sectionRef.current)
+      }
+    }
+  }, [])
 
   // Preload next image
   useEffect(() => {
@@ -79,18 +103,21 @@ export default function Gallery() {
     img.src = gallerySlides[nextIndex].imageUrl
   }, [currentIndex])
 
-  // Auto-slide with play/pause
+  // Auto-slide with play/pause (only when in viewport)
   useEffect(() => {
-    if (isPlaying) {
+    if (isPlaying && isInViewport) {
       intervalRef.current = setInterval(() => {
-        handleNext()
-      }, 5000) // 5 seconds for better UX
+        setDirection(1)
+        setCurrentIndex((prev) => (prev + 1) % gallerySlides.length)
+      }, 3000) // 3 seconds autoplay
 
       return () => {
         if (intervalRef.current) clearInterval(intervalRef.current)
       }
+    } else {
+      if (intervalRef.current) clearInterval(intervalRef.current)
     }
-  }, [isPlaying, currentIndex])
+  }, [isPlaying, isInViewport])
 
   const handleNext = useCallback(() => {
     setDirection(1)
@@ -168,13 +195,12 @@ export default function Gallery() {
 
   return (
     <section 
+      ref={sectionRef}
       id="gallery" 
       className="relative min-h-[70vh] sm:min-h-[80vh] md:min-h-screen bg-gray-900 overflow-hidden"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
-      onMouseEnter={() => setIsPlaying(false)}
-      onMouseLeave={() => setIsPlaying(true)}
     >
       {/* Image Container with AnimatePresence for smooth transitions */}
       <div className="relative w-full h-screen">

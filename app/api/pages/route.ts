@@ -10,11 +10,6 @@ type IncomingNavItem = {
   cta?: boolean
 }
 
-type IncomingStoryPoint = {
-  title?: string
-  text?: string
-}
-
 type IncomingPagePayload = {
   title?: string
   lastUpdatedAt?: string
@@ -40,15 +35,8 @@ type IncomingPagePayload = {
   }
   header?: {
     siteName?: string
+    logo?: string | null
     nav?: IncomingNavItem[]
-  }
-  story?: {
-    title?: string
-    content?: string
-    highlight?: string
-    missionTitle?: string
-    missionText?: string
-    points?: IncomingStoryPoint[]
   }
 }
 
@@ -133,18 +121,6 @@ export async function GET() {
             }
           ]
         },
-        story: {
-          title: 'Povestea noastră',
-          content: 'Suntem o afacere de familie, gândită cu suflet pentru a crea amintiri reale.\n\nAm transformat cu grijă acest spațiu într-o oază de liniște și frumusețe, situată lângă Buzău, unde natura se îmbină perfect cu confortul modern. Am pus aici toată energia și pasiunea noastră pentru a crea un cadru în care fiecare eveniment devine o amintire de neuitat.\n\nCu experiență în organizarea a sute de evenimente, de la nunți de vis și petreceri corporate până la aniversări intime și celebrări speciale, am învățat că fiecare eveniment este unic și merită o atenție personalizată.',
-          highlight: 'Nu există mândrie mai mare decât să știm că am făcut parte din bucuria celor care ne-au ales și să vedem cum visurile lor prind viață în grădina noastră.',
-          missionTitle: 'Misiunea noastră',
-          missionText: 'Să creăm cadrul perfect pentru evenimente de suflet, unde fiecare detaliu este gândit cu grijă și pasiune, pentru ca tu să te bucuri din plin de momentele tale speciale.',
-          points: [
-            { title: 'Autenticitate', text: 'Suntem o afacere de familie, gândită cu suflet.' },
-            { title: 'Atenție la detalii', text: 'Fiecare element este ales cu grijă.' },
-            { title: 'Pasiune', text: 'Iubim ceea ce facem și se vede în fiecare eveniment.' },
-          ],
-        },
         contact: {
           title: 'Contactează-ne',
           phone: '+40 234 567 890',
@@ -219,15 +195,6 @@ export async function POST(request: NextRequest) {
               : [],
           }
         : undefined,
-      story: data?.story ? {
-        ...data.story,
-        points: Array.isArray(data.story.points)
-          ? data.story.points.map((point) => ({
-              title: point?.title ?? '',
-              text: point?.text ?? '',
-            }))
-          : [],
-      } : undefined,
         header: data?.header ? {
           ...data.header,
           nav: Array.isArray(data.header.nav)

@@ -7,10 +7,11 @@ import Image from 'next/image'
 
 interface HeaderProps {
   siteName?: string;
+  logo?: { id?: string; url?: string; externalUrl?: string; alt?: string };
   nav?: Array<{ label: string; href: string; cta?: boolean }>
 }
 
-export default function Header({ siteName, nav }: HeaderProps) {
+export default function Header({ siteName, logo, nav }: HeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
@@ -51,8 +52,8 @@ export default function Header({ siteName, nav }: HeaderProps) {
             className="relative h-10 sm:h-11 md:h-12 lg:h-13 w-auto transition-all duration-300 hover:scale-105"
           >
             <Image
-              src="https://event-venue-buzau.s3.eu-central-1.amazonaws.com/gallery/logo/SinglaKidsClub.png"
-              alt={siteName || 'Kids Club'}
+              src={logo?.externalUrl || logo?.url || "https://event-venue-buzau.s3.eu-central-1.amazonaws.com/gallery/logo/SinglaKidsClub.png"}
+              alt={logo?.alt || siteName || 'Kids Club'}
               width={400}
               height={112}
               className="h-full w-auto object-contain"

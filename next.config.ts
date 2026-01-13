@@ -11,14 +11,14 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'res.cloudinary.com',
-      },
+  },
       {
         protocol: 'https',
         hostname: 'event-venue-buzau.s3.eu-central-1.amazonaws.com',
       },
     ],
   },
-  reactCompiler: false,
+    reactCompiler: false,
   turbopack: {},
 }
 

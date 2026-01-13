@@ -96,7 +96,7 @@ export default function About({ data }: AboutProps) {
                   <div className="flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-primary-100 flex items-center justify-center">
                     <Check className="w-3 h-3 sm:w-4 sm:h-4 text-primary-600" />
                   </div>
-                  <span className="text-sm sm:text-base text-gray-700">{item.feature}</span>
+                  <span className="text-sm sm:text-base text-gray-600">{item.feature}</span>
                 </motion.div>
               ))}
             </div>
@@ -148,12 +148,12 @@ function ResponsiveAboutImage({ image }: { image: AboutImage }) {
   const altText = isNonEmptyString(image.alt) ? image.alt : 'Imagine spațiu'
 
   return (
-    <div className="max-w-screen-md mx-auto rounded-2xl shadow-2xl overflow-hidden">
+    <div className="relative aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={src}
         alt={altText}
-        className="w-full h-auto max-h-[60vh] object-contain"
+        className="w-full h-full object-cover"
         loading="lazy"
         decoding="async"
         onError={() => setIsValid(false)}
