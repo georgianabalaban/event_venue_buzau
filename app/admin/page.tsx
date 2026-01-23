@@ -12,6 +12,7 @@ interface SiteData {
     secondaryHeading: string
     subheading: string
     ctaText: string
+    backgroundImage?: { id?: string; url?: string; externalUrl?: string; alt?: string }
   }
   about: {
     title: string
@@ -206,11 +207,14 @@ const normalizeNav = (nav?: Array<PayloadNavItem> | null): Array<{ label: string
 }
 
 const mapPayloadToSiteData = (payload?: PayloadPageResponse | null): SiteData => {
+  const heroBackgroundImage = normalizeImage(payload?.hero?.backgroundImage as PayloadImageDoc | null | undefined)
+  
   const hero: SiteData['hero'] = {
     heading: payload?.hero?.heading ?? defaultData.hero.heading,
     secondaryHeading: payload?.hero?.secondaryHeading ?? defaultData.hero.secondaryHeading,
     subheading: payload?.hero?.subheading ?? defaultData.hero.subheading,
     ctaText: payload?.hero?.ctaText ?? defaultData.hero.ctaText,
+    backgroundImage: heroBackgroundImage,
   }
 
   const payloadFeatures = normalizeFeatures(payload?.about?.features)
@@ -265,6 +269,10 @@ export default function AdminPanel() {
   const [aboutDragActive, setAboutDragActive] = useState(false)
   const [aboutPendingFiles, setAboutPendingFiles] = useState<File[]>([])
   const [aboutIsUploading, setAboutIsUploading] = useState(false)
+  // Hero background image upload
+  const [heroDragActive, setHeroDragActive] = useState(false)
+  const [heroPendingFiles, setHeroPendingFiles] = useState<File[]>([])
+  const [heroIsUploading, setHeroIsUploading] = useState(false)
 
   const updateServicesTitle = (title: string) => {
     const next = {
@@ -331,6 +339,7 @@ export default function AdminPanel() {
             secondaryHeading: siteData.hero.secondaryHeading,
             subheading: siteData.hero.subheading,
             ctaText: siteData.hero.ctaText,
+            backgroundImage: siteData.hero.backgroundImage?.id,
           },
           about: {
             title: siteData.about.title,
@@ -463,6 +472,109 @@ export default function AdminPanel() {
     }
   }
 
+  // Hero background image functions
+  const autoSaveHeroBackground = async (nextImage: SiteData['hero']['backgroundImage'] | undefined) => {
+    const featuresArray = featuresText
+      .split('\n')
+      .map((value) => value.trim())
+      .filter(isNonEmptyString)
+    const snapshot: SiteData = {
+      ...siteData,
+      hero: { ...siteData.hero, backgroundImage: nextImage },
+    }
+    const res = await fetch('/api/pages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: 'Home Page',
+        hero: {
+          heading: snapshot.hero.heading,
+          secondaryHeading: snapshot.hero.secondaryHeading,
+          subheading: snapshot.hero.subheading,
+          ctaText: snapshot.hero.ctaText,
+          backgroundImage: snapshot.hero.backgroundImage?.id,
+        },
+        about: {
+          title: snapshot.about.title,
+          description: snapshot.about.description,
+          features: featuresArray,
+          image: snapshot.about.image?.id,
+        },
+        services: snapshot.services,
+        header: {
+          siteName: snapshot.header?.siteName,
+          logo: snapshot.header?.logo?.id,
+          nav: snapshot.header?.nav,
+        },
+      }),
+    })
+    if (res.ok) {
+      window.dispatchEvent(new CustomEvent('adminDataSaved'))
+      if (window.opener) window.opener.postMessage({ type: 'adminDataSaved' }, '*')
+      setSaved(true)
+      setTimeout(() => setSaved(false), 1500)
+      setIsEditing(false)
+    }
+  }
+
+  const removeHeroBackgroundFromServer = async (image?: SiteData['hero']['backgroundImage']) => {
+    if (!image) return
+    if (image.id) {
+      await fetch(`/api/gallery?id=${image.id}`, { method: 'DELETE' })
+      return
+    }
+    const removableUrl = image.externalUrl ?? image.url
+    if (removableUrl) {
+      const encodedUrl = encodeURIComponent(removableUrl)
+      await fetch(`/api/gallery?url=${encodedUrl}`, { method: 'DELETE' })
+    }
+  }
+
+  const uploadHeroBackgroundFile = async (file: File | null) => {
+    if (!file) return
+    setHeroIsUploading(true)
+    try {
+      const form = new FormData()
+      form.append('file', file)
+      form.append('category', 'outdoor')
+      form.append('folder', 'hero')
+      const response = await fetch('/api/gallery/upload', { method: 'POST', body: form })
+      if (!response.ok) return
+      const doc = (await response.json()) as GalleryUploadResponse
+
+      const previousImage = siteData.hero.backgroundImage
+      if (previousImage) {
+        await removeHeroBackgroundFromServer(previousImage)
+      }
+
+      const uploadedImage: SiteData['hero']['backgroundImage'] = {
+        id: doc.id ?? undefined,
+        url: doc.url ?? undefined,
+        externalUrl: doc.externalUrl ?? undefined,
+        alt: doc.alt ?? '',
+      }
+
+      setSiteData(prev => ({
+        ...prev,
+        hero: { ...prev.hero, backgroundImage: uploadedImage },
+      }))
+
+      await autoSaveHeroBackground(uploadedImage)
+      setIsEditing(true)
+    } finally {
+      setHeroIsUploading(false)
+      setHeroPendingFiles([])
+    }
+  }
+
+  const handleDeleteHeroBackground = async () => {
+    await removeHeroBackgroundFromServer(siteData.hero.backgroundImage)
+    setSiteData(prev => ({ ...prev, hero: { ...prev.hero, backgroundImage: undefined } }))
+    setHeroPendingFiles([])
+    await autoSaveHeroBackground(undefined)
+    setIsEditing(true)
+  }
+
   const tabs = [
     { id: 'header', label: 'Header', icon: Settings },
     { id: 'hero', label: 'Hero Section', icon: FileText },
@@ -527,10 +639,62 @@ export default function AdminPanel() {
     )
   }
 
+  const renderHeroUploadControls = (variant: 'replace' | 'initial') => {
+    const dropZonePadding = variant === 'replace' ? 'p-4' : 'p-6'
+    const description = variant === 'replace'
+      ? 'Înlocuiește imaginea de fundal: trage aici sau alege din calculator'
+      : 'Trage și plasează imaginea de fundal aici sau alege din calculator'
+    const containerSpacing = variant === 'replace' ? 'mt-3' : ''
+    const textMargin = variant === 'replace' ? 'mb-2' : 'mb-3'
+
+    return (
+      <div className={containerSpacing}>
+        <div
+          onDragOver={(event) => { event.preventDefault(); setHeroDragActive(true) }}
+          onDragLeave={() => setHeroDragActive(false)}
+          onDrop={(event) => {
+            event.preventDefault()
+            setHeroDragActive(false)
+            setHeroPendingFiles(Array.from(event.dataTransfer.files).slice(0, 1))
+          }}
+          className={`border-2 border-dashed rounded-lg text-center ${dropZonePadding} ${heroDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
+        >
+          <p className={`text-sm text-gray-600 ${textMargin}`}>{description}</p>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(event) => setHeroPendingFiles(event.target.files ? Array.from(event.target.files).slice(0, 1) : [])}
+            className="block w-full text-sm text-gray-900 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+          />
+          {heroPendingFiles.length > 0 && (
+            <div className="mt-3 text-sm text-gray-700">
+              <div className="flex items-center justify-between">
+                <span>{heroPendingFiles[0].name}</span>
+                <button
+                  type="button"
+                  disabled={heroIsUploading}
+                  onClick={() => uploadHeroBackgroundFile(heroPendingFiles[0] ?? null)}
+                  className="px-3 py-1.5 bg-blue-600 text-white rounded-md disabled:opacity-50"
+                >
+                  {heroIsUploading ? 'Se încarcă...' : 'Încarcă'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   const aboutImage = siteData.about.image
   const aboutImageUrl = aboutImage?.externalUrl ?? aboutImage?.url ?? ''
   const aboutImageAlt = aboutImage?.alt ?? 'Imagine Despre noi'
   const hasAboutImage = isNonEmptyString(aboutImageUrl)
+
+  const heroBackground = siteData.hero.backgroundImage
+  const heroBackgroundUrl = heroBackground?.externalUrl ?? heroBackground?.url ?? ''
+  const heroBackgroundAlt = heroBackground?.alt ?? 'Hero Background'
+  const hasHeroBackground = isNonEmptyString(heroBackgroundUrl)
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
@@ -661,6 +825,39 @@ export default function AdminPanel() {
                         onChange={(e) => { const next={...siteData, hero:{...siteData.hero, ctaText:e.target.value}}; setSiteData(next); setIsEditing(true) }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
+                    </div>
+                    {/* Hero Background Image Upload */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Imagine de fundal (Hero Section)
+                      </label>
+                      <p className="text-xs text-gray-500 mb-3">
+                        Imaginea va acoperi întregul ecran ca fundal pentru Hero Section. Recomandare: imagine landscape de înaltă calitate (min 1920x1080px).
+                      </p>
+                      {hasHeroBackground ? (
+                        <div className="mb-4">
+                          <div className="relative aspect-video max-w-2xl rounded-lg overflow-hidden border border-gray-200">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={heroBackgroundUrl}
+                              alt={heroBackgroundAlt}
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute bottom-0 left-0 right-0 bg-black/40 text-white text-xs px-2 py-1 truncate">
+                              {heroBackgroundAlt || 'Hero Background'}
+                            </div>
+                            <button
+                              onClick={handleDeleteHeroBackground}
+                              className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded hover:bg-black/70"
+                            >
+                              Șterge
+                            </button>
+                          </div>
+                          {renderHeroUploadControls('replace')}
+                        </div>
+                      ) : (
+                        renderHeroUploadControls('initial')
+                      )}
                     </div>
                   </div>
                 )}

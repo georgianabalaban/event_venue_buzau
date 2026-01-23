@@ -12,22 +12,42 @@ interface HeroProps {
     subheading?: string
     ctaText?: string
     backgroundImage?: {
-      url: string
+      url?: string
+      externalUrl?: string
       alt?: string
     }
   }
 }
 
 export default function Hero({ data }: HeroProps) {
+  const backgroundImageUrl = data?.backgroundImage?.externalUrl || data?.backgroundImage?.url
+  const hasBackgroundImage = !!backgroundImageUrl
+
   return (
     <section className="relative h-screen flex items-center justify-center overflow-hidden">
-      {/* Background with gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary-600 via-primary-700 to-secondary-700">
-        <div className="absolute inset-0 bg-black/40" />
-        {/* Animated gradient orbs */}
-        <div className="absolute top-20 left-20 w-96 h-96 bg-primary-500/30 rounded-full blur-3xl animate-float" />
-        <div className="absolute bottom-20 right-20 w-96 h-96 bg-secondary-500/30 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
-      </div>
+      {/* Background with image or gradient */}
+      {hasBackgroundImage ? (
+        <>
+          {/* Background Image with cover positioning */}
+          <div className="absolute inset-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={backgroundImageUrl}
+              alt={data?.backgroundImage?.alt || 'Hero background'}
+              className="w-full h-full object-cover object-center"
+            />
+            {/* Dark overlay for better text readability */}
+            <div className="absolute inset-0 bg-black/50" />
+          </div>
+        </>
+      ) : (
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-600 via-primary-700 to-secondary-700">
+          <div className="absolute inset-0 bg-black/40" />
+          {/* Animated gradient orbs */}
+          <div className="absolute top-20 left-20 w-96 h-96 bg-primary-500/30 rounded-full blur-3xl animate-float" />
+          <div className="absolute bottom-20 right-20 w-96 h-96 bg-secondary-500/30 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
+        </div>
+      )}
 
       {/* Content */}
       <div className="relative z-10 container mx-auto px-4 text-center text-white">
