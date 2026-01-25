@@ -89,7 +89,7 @@ export default function Hero({ data }: HeroProps) {
             {/* Primary CTA Button - href="#contact" */}
             <a
               href="#contact"
-              className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white text-gray-900 px-4 sm:px-5 md:px-6 lg:px-8 py-2.5 sm:py-3 md:py-4 rounded-full font-bold text-xs sm:text-sm md:text-base shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 hover:-translate-y-1"
+              className="group w-auto inline-flex items-center justify-center gap-2 bg-white text-gray-900 px-4 sm:px-5 md:px-6 lg:px-8 py-2.5 sm:py-3 md:py-4 rounded-full font-bold text-xs sm:text-sm md:text-base shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 hover:-translate-y-1"
             >
               {data?.ctaText || 'Rezervă acum'}
               <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 group-hover:translate-x-2 transition-transform duration-300" />
@@ -98,7 +98,7 @@ export default function Hero({ data }: HeroProps) {
             {/* Secondary CTA Button - href="#about" */}
             <a
               href="#about"
-              className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 border-2 border-white text-white bg-white/10 backdrop-blur-sm px-4 sm:px-5 md:px-6 lg:px-8 py-2.5 sm:py-3 md:py-4 rounded-full font-bold text-xs sm:text-sm md:text-base shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 hover:-translate-y-1"
+              className="group w-auto inline-flex items-center justify-center gap-2 border-2 border-white text-white bg-white/10 backdrop-blur-sm px-4 sm:px-5 md:px-6 lg:px-8 py-2.5 sm:py-3 md:py-4 rounded-full font-bold text-xs sm:text-sm md:text-base shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 hover:-translate-y-1"
             >
               Descoperă spațiul
             </a>
