@@ -16,6 +16,7 @@ import { Bookings } from './collections/Bookings'
 import { Users } from './collections/Users'
 import { Testimonials } from './collections/Testimonials'
 import { FAQs } from './collections/FAQs'
+import { ServiceDetails } from './collections/ServiceDetails'
 
 export default buildConfig({
   secret: process.env.PAYLOAD_SECRET || 'your-secret-key',
@@ -27,7 +28,7 @@ export default buildConfig({
     },
   },
   editor: lexicalEditor({}),
-  collections: [Pages, Events, Gallery, Bookings, Testimonials, FAQs, Users],
+  collections: [Pages, Events, Gallery, Bookings, Testimonials, FAQs, ServiceDetails, Users],
   globals: [Settings],
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),

@@ -1,10 +1,21 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Save, Eye, Settings, FileText, Image, Calendar, Users } from 'lucide-react'
+import { Save, Eye, Settings, FileText, Image, Calendar, Users, Upload, X, Trash2 } from 'lucide-react'
 
 // Tipuri pentru datele site-ului
 type HeaderLogo = { id?: string; url?: string; externalUrl?: string; alt?: string }
+
+interface ServiceDetail {
+  id: string
+  imageUrl?: string
+  imageId?: string
+  description: string
+}
+
+interface ServiceDetailsData {
+  [serviceName: string]: ServiceDetail[]
+}
 
 interface SiteData {
   hero: {
@@ -265,6 +276,14 @@ export default function AdminPanel() {
   const [loading, setLoading] = useState(true)
   const [siteData, setSiteData] = useState<SiteData>(defaultData)
   const [featuresText, setFeaturesText] = useState<string>(defaultData.about.features.join('\n'))
+  
+  // Service Details State
+  const [serviceDetails, setServiceDetails] = useState<ServiceDetailsData>({})
+  const [editingService, setEditingService] = useState<string | null>(null)
+  const [newDetailText, setNewDetailText] = useState('')
+  const [uploadingServiceImage, setUploadingServiceImage] = useState(false)
+ const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   // About image upload (single) - gallery-like UX
   const [aboutDragActive, setAboutDragActive] = useState(false)
   const [aboutPendingFiles, setAboutPendingFiles] = useState<File[]>([])
@@ -305,6 +324,69 @@ export default function AdminPanel() {
     setIsEditing(true);
   }, [])
 
+  // Service Details Functions
+  const handleServiceImageUpload = async (serviceName: string, file: File) => {
+    setUploadingServiceImage(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('category', 'events')
+      formData.append('alt', serviceName)
+      formData.append('title', serviceName)
+
+      const response = await fetch('/api/gallery/upload', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        return { id: data.id, url: data.externalUrl || data.url }
+      }
+    } catch (error) {
+      console.error('Upload error:', error)
+    } finally {
+      setUploadingServiceImage(false)
+    }
+    return null
+  }
+
+  const handleAddServiceDetail = async (serviceName: string, file: File, description: string) => {
+    const uploadedImage = await handleServiceImageUpload(serviceName, file)
+    if (uploadedImage) {
+      const newDetail: ServiceDetail = {
+        id: Date.now().toString(),
+        imageUrl: uploadedImage.url,
+        imageId: uploadedImage.id,
+        description
+      }
+      
+      setServiceDetails(prev => ({
+        ...prev,
+        [serviceName]: [...(prev[serviceName] || []), newDetail]
+      }))
+      setIsEditing(true)
+    }
+  }
+
+  const handleRemoveServiceDetail = (serviceName: string, detailId: string) => {
+    setServiceDetails(prev => ({
+      ...prev,
+      [serviceName]: (prev[serviceName] || []).filter(d => d.id !== detailId)
+    }))
+    setIsEditing(true)
+  }
+
+  const handleUpdateServiceDetailText = (serviceName: string, detailId: string, newText: string) => {
+    setServiceDetails(prev => ({
+      ...prev,
+      [serviceName]: (prev[serviceName] || []).map(d => 
+        d.id === detailId ? { ...d, description: newText } : d
+      )
+    }))
+    setIsEditing(true)
+  }
+
   // Încarcă datele din baza de date (Payload) la inițializare
   useEffect(() => {
     const load = async () => {
@@ -317,6 +399,12 @@ export default function AdminPanel() {
           setSiteData(mapped)
           setFeaturesText(mapped.about.features.join('\n'))
         }
+        
+        // Load service details from localStorage
+        const savedDetails = localStorage.getItem('serviceDetails')
+        if (savedDetails) {
+          setServiceDetails(JSON.parse(savedDetails))
+        }
       } catch (e) {
         console.error('Failed to load page data:', e)
       } finally {
@@ -325,6 +413,13 @@ export default function AdminPanel() {
     }
     load()
   }, [])
+
+  // Auto-save service details to localStorage
+  useEffect(() => {
+    if (Object.keys(serviceDetails).length > 0) {
+      localStorage.setItem('serviceDetails', JSON.stringify(serviceDetails))
+    }
+  }, [serviceDetails])
 
   const handleSave = async () => {
     try {
@@ -580,6 +675,7 @@ export default function AdminPanel() {
     { id: 'hero', label: 'Hero Section', icon: FileText },
     { id: 'about', label: 'Despre', icon: Users },
     { id: 'services', label: 'Servicii', icon: Settings },
+    { id: 'service-details', label: 'Detalii Servicii', icon: FileText },
     { id: 'events', label: 'Evenimente', icon: Calendar },
     { id: 'gallery', label: 'Galerie', icon: Image },
   ]
@@ -968,6 +1064,148 @@ export default function AdminPanel() {
                         </div>
                       ))}
                     </div>
+                  </div>
+                )}
+
+                {activeTab === 'service-details' && (
+                  <div className="space-y-6">
+                    <div className="mb-6">
+                      <h3 className="text-xl font-bold text-gray-900 mb-2">Gestionare Detalii Servicii</h3>
+                      <p className="text-sm text-gray-600">Adaugă imagini și descrieri pentru fiecare serviciu. Acestea vor apărea în modal-ul de pe pagina principală.</p>
+                    </div>
+
+                    {siteData.services.items.map((service, serviceIndex) => {
+                      const details = serviceDetails[service.name] || []
+                      const isEditing = editingService === service.name
+
+                      return (
+                        <div key={serviceIndex} className="border border-gray-300 rounded-lg overflow-hidden">
+                          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+                            <h4 className="text-lg font-bold text-white">{service.name}</h4>
+                            <p className="text-sm text-blue-100 mt-1">{service.description}</p>
+                          </div>
+
+                          <div className="p-6 bg-white space-y-4">
+                            {/* Lista de imagini existente */}
+                            {details.length > 0 && (
+                              <div className="space-y-4 mb-4">
+                                {details.map((detail, idx) => (
+                                  <div key={detail.id} className="border border-gray-200 rounded-lg p-4 flex gap-4">
+                                    {detail.imageUrl && (
+                                      <div className="w-32 h-32 flex-shrink-0">
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img 
+                                          src={detail.imageUrl} 
+                                          alt={service.name}
+                                          className="w-full h-full object-cover rounded"
+                                        />
+                                      </div>
+                                    )}
+                                    <div className="flex-1">
+                                      <textarea
+                                        value={detail.description}
+                                        onChange={(e) => handleUpdateServiceDetailText(service.name, detail.id, e.target.value)}
+                                        placeholder="Descriere (2-3 propoziții)"
+                                        rows={3}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                      />
+                                      <button
+                                        onClick={() => handleRemoveServiceDetail(service.name, detail.id)}
+                                        className="mt-2 text-red-600 hover:text-red-700 text-sm flex items-center gap-1"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                        Șterge
+                                      </button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Form pentru adăugare nou */}
+                            {isEditing ? (
+                              <div className="border-2 border-dashed border-blue-300 rounded-lg p-4 bg-blue-50">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                  Selectează imagine
+                                </label>
+                                <input
+                                  ref={fileInputRef}
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0]
+                                    if (file) {
+                                      setSelectedFile(file)
+                                    }
+                                  }}
+                                  className="mb-3 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                                />
+                                <textarea
+                                  value={newDetailText}
+                                  onChange={(e) => setNewDetailText(e.target.value)}
+                                  placeholder="Adaugă descriere (2-3 propoziții)..."
+                                  rows={3}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm mb-2"
+                                />
+                                <div className="flex gap-2">
+                                <button
+                                    onClick={async () => {
+                                      if (!selectedFile) {
+                                        alert('Te rog selectează o imagine!')
+                                        return
+                                      }
+                                      if (!newDetailText.trim()) {
+                                        alert('Te rog adaugă o descriere!')
+                                        return
+                                      }
+                                      await handleAddServiceDetail(service.name, selectedFile, newDetailText)
+                                      setNewDetailText('')
+                                      setSelectedFile(null)
+                                      if (fileInputRef.current) {
+                                        fileInputRef.current.value = ''
+                                      }
+                                      // NU închide form-ul, rămâne deschis pentru a adăuga mai multe
+                                    }}
+                                    disabled={uploadingServiceImage}
+                                    className="px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+                                  >
+                                    {uploadingServiceImage ? 'Se încarcă...' : 'Salvează'}
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setEditingService(null)
+                                      setNewDetailText('')
+                                      setSelectedFile(null)
+                                      if (fileInputRef.current) {
+                                        fileInputRef.current.value = ''
+                                      }
+                                    }}
+                                    className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+                                  >
+                                    Închide
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => setEditingService(service.name)}
+                                disabled={uploadingServiceImage}
+                                className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-50"
+                              >
+                                {uploadingServiceImage ? (
+                                  <>Se încarcă...</>
+                                ) : (
+                                  <>
+                                    <Upload className="w-5 h-5" />
+                                    Adaugă Imagine + Descriere
+                                  </>
+                                )}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
                 )}
 
