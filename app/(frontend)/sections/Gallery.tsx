@@ -109,7 +109,7 @@ export default function Gallery() {
       intervalRef.current = setInterval(() => {
         setDirection(1)
         setCurrentIndex((prev) => (prev + 1) % gallerySlides.length)
-      }, 3000) // 3 seconds autoplay
+      }, 4000) // 4 seconds autoplay
 
       return () => {
         if (intervalRef.current) clearInterval(intervalRef.current)
@@ -246,13 +246,13 @@ export default function Gallery() {
                 transition={{ duration: 0.6, ease: 'easeOut' }}
                 className={`font-bold text-white ${
                   currentSlide.isTitle 
-                    ? 'text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl' 
-                    : 'text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl'
+                    ? 'text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl' 
+                    : 'text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl'
                 }`}
                 style={{
                   textShadow: '0 4px 20px rgba(0,0,0,0.8), 0 8px 40px rgba(0,0,0,0.5)',
                   letterSpacing: '-0.02em',
-                }}
+                } as React.CSSProperties}
               >
                 {currentSlide.title}
               </motion.h2>
