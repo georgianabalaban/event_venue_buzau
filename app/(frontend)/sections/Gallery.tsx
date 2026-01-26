@@ -10,7 +10,7 @@ type GallerySlide = {
   alt: string
 }
 
-const gallerySlides: GallerySlide[] = [
+const defaultGallerySlides: GallerySlide[] = [
   { 
     title: 'Ce veți găsi la noi?', 
     isTitle: true,
@@ -65,6 +65,7 @@ const gallerySlides: GallerySlide[] = [
 ]
 
 export default function Gallery() {
+  const [gallerySlides, setGallerySlides] = useState(defaultGallerySlides)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isPlaying, setIsPlaying] = useState(true)
   const [isInViewport, setIsInViewport] = useState(true)
@@ -73,6 +74,25 @@ export default function Gallery() {
   const [touchEnd, setTouchEnd] = useState(0)
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const sectionRef = useRef<HTMLElement>(null)
+
+  // Load from localStorage (from admin edits)
+  useEffect(() => {
+    const saved = localStorage.getItem('gallerySlides')
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved)
+        const formatted = parsed.map((s: any) => ({
+          title: s.title,
+          imageUrl: s.imageUrl,
+          alt: s.title,
+          isTitle: s.id === '1' // Primul slide rămâne titlu
+        }))
+        setGallerySlides(formatted)
+      } catch (e) {
+        console.error('Error loading gallery from localStorage:', e)
+      }
+    }
+  }, [])
 
   // Intersection Observer to detect when gallery is in viewport
   useEffect(() => {

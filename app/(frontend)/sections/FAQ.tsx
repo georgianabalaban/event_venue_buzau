@@ -1,50 +1,63 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ChevronDown } from 'lucide-react'
 
 interface FAQItem {
-  id: number
+  id: string
   question: string
   answer: string
 }
 
-export default function FAQ() {
-  const [openId, setOpenId] = useState<number | null>(1)
+const defaultFAQs: FAQItem[] = [
+  {
+    id: '1',
+    question: 'Care este capacitatea maximă a locației?',
+    answer: 'Locația noastră poate găzdui până la 200 de persoane. Avem atât spațiu exterior cu piscină, cât și sală interioară elegantă, perfect echipate pentru evenimente de orice dimensiune. Facilități precum parcarea, toaletele și zona de catering sunt proiectate pentru a susține acest număr de participanți.',
+  },
+  {
+    id: '2',
+    question: 'Ce facem în caz de vreme nefavorabilă?',
+    answer: 'Avem atât spațiu exterior, cât și interior complet acoperit și amenajat. În cazul ploii sau vremii nefavorabile, evenimentul poate fi mutat în sala interioară, fără a compromite atmosfera sau calitatea petrecerii. Echipa noastră este pregătită să se adapteze rapid oricăror condiții meteo.',
+  },
+  {
+    id: '3',
+    question: 'Aveți parcare disponibilă?',
+    answer: 'Da, avem o parcare privată suficient de mare pentru a acomoda toți invitații. Parcarea este gratuită și este situată în imediata apropiere a locației pentru confortul maxim al oaspeților.',
+  },
+  {
+    id: '4',
+    question: 'Putem aduce noi mâncarea și băutura?',
+    answer: 'Pentru a menține standardele de calitate și siguranță alimentară, colaborăm cu parteneri verificați pentru catering. Putem discuta despre preferințele voastre culinare și vă putem recomanda opțiuni personalizate care să se potrivească perfect evenimentului vostru.',
+  },
+  {
+    id: '5',
+    question: 'Organizați mai multe evenimente în același timp?',
+    answer: 'Nu. Organizăm un singur eveniment pe zi pentru un singur client. Locația este disponibilă exclusiv pentru dumneavoastră în acea zi, asigurând intimitate completă și atenție deplină din partea echipei noastre.',
+  },
+  {
+    id: '6',
+    question: 'Ce servicii sunt incluse în pachetul de bază?',
+    answer: 'Pachetul de bază include: închirierea spațiului pentru întreaga zi, mobilier (mese, scaune), decorațiuni de bază, echipament audio-video modern, iluminat ambiental, acces la piscină și grădină, și suportul echipei noastre pe toată durata evenimentului. Putem personaliza pachetul în funcție de nevoile voastre specifice.',
+  },
+]
 
-  const faqs: FAQItem[] = [
-    {
-      id: 1,
-      question: 'Care este capacitatea maximă a locației?',
-      answer: 'Locația noastră poate găzdui până la 200 de persoane. Avem atât spațiu exterior cu piscină, cât și sală interioară elegantă, perfect echipate pentru evenimente de orice dimensiune. Facilități precum parcarea, toaletele și zona de catering sunt proiectate pentru a susține acest număr de participanți.',
-    },
-    {
-      id: 2,
-      question: 'Ce facem în caz de vreme nefavorabilă?',
-      answer: 'Avem atât spațiu exterior, cât și interior complet acoperit și amenajat. În cazul ploii sau vremii nefavorabile, evenimentul poate fi mutat în sala interioară, fără a compromite atmosfera sau calitatea petrecerii. Echipa noastră este pregătită să se adapteze rapid oricăror condiții meteo.',
-    },
-    {
-      id: 3,
-      question: 'Aveți parcare disponibilă?',
-      answer: 'Da, avem o parcare privată suficient de mare pentru a acomoda toți invitații. Parcarea este gratuită și este situată în imediata apropiere a locației pentru confortul maxim al oaspeților.',
-    },
-    {
-      id: 4,
-      question: 'Putem aduce noi mâncarea și băutura?',
-      answer: 'Pentru a menține standardele de calitate și siguranță alimentară, colaborăm cu parteneri verificați pentru catering. Putem discuta despre preferințele voastre culinare și vă putem recomanda opțiuni personalizate care să se potrivească perfect evenimentului vostru.',
-    },
-    {
-      id: 5,
-      question: 'Organizați mai multe evenimente în același timp?',
-      answer: 'Nu. Organizăm un singur eveniment pe zi pentru un singur client. Locația este disponibilă exclusiv pentru dumneavoastră în acea zi, asigurând intimitate completă și atenție deplină din partea echipei noastre.',
-    },
-    {
-      id: 6,
-      question: 'Ce servicii sunt incluse în pachetul de bază?',
-      answer: 'Pachetul de bază include: închirierea spațiului pentru întreaga zi, mobilier (mese, scaune), decorațiuni de bază, echipament audio-video modern, iluminat ambiental, acces la piscină și grădină, și suportul echipei noastre pe toată durata evenimentului. Putem personaliza pachetul în funcție de nevoile voastre specifice.',
-    },
-  ]
+export default function FAQ() {
+  const [faqs, setFaqs] = useState<FAQItem[]>(defaultFAQs)
+  const [openId, setOpenId] = useState<string | null>('1')
+
+  // Load from localStorage (from admin edits)
+  useEffect(() => {
+    const saved = localStorage.getItem('faqItems')
+    if (saved) {
+      try {
+        setFaqs(JSON.parse(saved))
+      } catch (e) {
+        console.error('Error loading FAQs from localStorage:', e)
+      }
+    }
+  }, [])
 
   return (
     <section className="py-24 bg-gradient-to-b from-white to-gray-50">

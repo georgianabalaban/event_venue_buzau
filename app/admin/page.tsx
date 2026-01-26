@@ -284,6 +284,8 @@ export default function AdminPanel() {
   const [uploadingServiceImage, setUploadingServiceImage] = useState(false)
  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [editingDetailId, setEditingDetailId] = useState<string | null>(null)
+  const editImageInputRef = useRef<HTMLInputElement>(null)
   // About image upload (single) - gallery-like UX
   const [aboutDragActive, setAboutDragActive] = useState(false)
   const [aboutPendingFiles, setAboutPendingFiles] = useState<File[]>([])
@@ -385,6 +387,29 @@ export default function AdminPanel() {
       )
     }))
     setIsEditing(true)
+  }
+
+  const handleUpdateServiceDetailImage = async (serviceName: string, detailId: string, file: File) => {
+    setUploadingServiceImage(true)
+    try {
+      const uploadedImage = await handleServiceImageUpload(serviceName, file)
+      if (uploadedImage) {
+        setServiceDetails(prev => ({
+          ...prev,
+          [serviceName]: (prev[serviceName] || []).map(d => 
+            d.id === detailId ? { 
+              ...d, 
+              imageUrl: uploadedImage.url,
+              imageId: uploadedImage.id 
+            } : d
+          )
+        }))
+        setIsEditing(true)
+        setEditingDetailId(null)
+      }
+    } finally {
+      setUploadingServiceImage(false)
+    }
   }
 
   // Încarcă datele din baza de date (Payload) la inițializare
@@ -678,6 +703,7 @@ export default function AdminPanel() {
     { id: 'service-details', label: 'Detalii Servicii', icon: FileText },
     { id: 'events', label: 'Evenimente', icon: Calendar },
     { id: 'gallery', label: 'Galerie', icon: Image },
+    { id: 'faq', label: 'Întrebări Frecvente', icon: FileText },
   ]
 
   const handleDeleteAboutImage = async () => {
@@ -1092,13 +1118,31 @@ export default function AdminPanel() {
                                 {details.map((detail, idx) => (
                                   <div key={detail.id} className="border border-gray-200 rounded-lg p-4 flex gap-4">
                                     {detail.imageUrl && (
-                                      <div className="w-32 h-32 flex-shrink-0">
+                                      <div className="w-32 h-32 flex-shrink-0 relative">
                                         {/* eslint-disable-next-line @next/next/no-img-element */}
                                         <img 
                                           src={detail.imageUrl} 
                                           alt={service.name}
                                           className="w-full h-full object-cover rounded"
                                         />
+                                        {/* Buton editare imagine - mereu vizibil în colțul dreapta-jos */}
+                                        <label className="absolute bottom-1 right-1 cursor-pointer bg-blue-600 text-white px-2 py-1 rounded text-xs font-medium hover:bg-blue-700 shadow-lg flex items-center gap-1">
+                                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                                          Edit
+                                          <input
+                                            ref={editingDetailId === detail.id ? editImageInputRef : null}
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            disabled={uploadingServiceImage}
+                                            onChange={(e) => {
+                                              const file = e.target.files?.[0]
+                                              if (file) {
+                                                handleUpdateServiceDetailImage(service.name, detail.id, file)
+                                              }
+                                            }}
+                                          />
+                                        </label>
                                       </div>
                                     )}
                                     <div className="flex-1">
@@ -1107,15 +1151,17 @@ export default function AdminPanel() {
                                         onChange={(e) => handleUpdateServiceDetailText(service.name, detail.id, e.target.value)}
                                         placeholder="Descriere (2-3 propoziții)"
                                         rows={3}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm mb-2"
                                       />
-                                      <button
-                                        onClick={() => handleRemoveServiceDetail(service.name, detail.id)}
-                                        className="mt-2 text-red-600 hover:text-red-700 text-sm flex items-center gap-1"
-                                      >
-                                        <Trash2 className="w-4 h-4" />
-                                        Șterge
-                                      </button>
+                                      <div className="flex gap-2">
+                                        <button
+                                          onClick={() => handleRemoveServiceDetail(service.name, detail.id)}
+                                          className="text-red-600 hover:text-red-700 text-sm flex items-center gap-1"
+                                        >
+                                          <Trash2 className="w-4 h-4" />
+                                          Șterge
+                                        </button>
+                                      </div>
                                     </div>
                                   </div>
                                 ))}
@@ -1260,6 +1306,10 @@ export default function AdminPanel() {
                 {activeTab === 'gallery' && (
                   <GalleryManager />
                 )}
+
+                {activeTab === 'faq' && (
+                  <FAQManager />
+                )}
                   </>
                 )}
               </div>
@@ -1291,188 +1341,538 @@ type GalleryItem = {
 }
 
 function GalleryManager() {
-  const [category, setCategory] = useState<'indoor' | 'outdoor' | 'pool' | 'events'>('indoor')
-  const [items, setItems] = useState<Record<'indoor'|'outdoor'|'pool'|'events', GalleryItem[]>>({ indoor: [], outdoor: [], pool: [], events: [] })
-  const [loading, setLoading] = useState(true)
-  const [dragActive, setDragActive] = useState(false)
-  const [pendingFiles, setPendingFiles] = useState<File[]>([])
-  const [isUploading, setIsUploading] = useState(false)
+  const defaultGallerySlides = [
+    { id: '1', title: 'Ce veți găsi la noi?', imageUrl: 'https://event-venue-buzau.s3.eu-central-1.amazonaws.com/gallery/events/whatsapp-image-2025-11-19-at-11-50-43-4--1763546411714.jpeg' },
+    { id: '2', title: 'O grădină plină de verdeață', imageUrl: 'https://event-venue-buzau.s3.eu-central-1.amazonaws.com/gallery/events/whatsapp-image-2025-11-19-at-11-50-43-2--1763546510042.jpeg' },
+    { id: '3', title: 'Multe locuri de stat la povești', imageUrl: 'https://event-venue-buzau.s3.eu-central-1.amazonaws.com/gallery/outdoor/img_4567-1761770813244.JPG' },
+    { id: '4', title: 'O piscină ce îi așteaptă pe curajoși', imageUrl: 'https://event-venue-buzau.s3.eu-central-1.amazonaws.com/gallery/pool/whatsapp-image-2025-11-19-at-12-05-34-1--1763546982351.jpeg' },
+    { id: '5', title: 'Un foișor ce poate găzdui până la 70 de persoane', imageUrl: 'https://event-venue-buzau.s3.eu-central-1.amazonaws.com/gallery/indoor/whatsapp-image-2025-11-19-at-12-14-13-1--1763547340444.jpeg' },
+    { id: '6', title: 'Aranjamente cu flori proaspete de sezon', imageUrl: 'https://event-venue-buzau.s3.eu-central-1.amazonaws.com/gallery/indoor/whatsapp-image-2025-11-19-at-12-14-13-2--1763547339885.jpeg' },
+    { id: '7', title: 'Un foișor separat acoperit', imageUrl: 'https://event-venue-buzau.s3.eu-central-1.amazonaws.com/gallery/outdoor/22730850-f44e-42dd-aee9-2dda7b3cec5f-1761770789925.jpg' },
+    { id: '8', title: 'O zonă de bufet pentru preparate delicioase', imageUrl: 'https://event-venue-buzau.s3.eu-central-1.amazonaws.com/gallery/indoor/whatsapp-image-2025-11-19-at-12-14-13-6--1763547336861.jpeg' },
+    { id: '9', title: 'Multă bucurie și energie bună', imageUrl: 'https://event-venue-buzau.s3.eu-central-1.amazonaws.com/gallery/outdoor/img_4598-1761770820795.JPG' },
+    { id: '10', title: 'Un strop de magie', imageUrl: 'https://event-venue-buzau.s3.eu-central-1.amazonaws.com/gallery/outdoor/WhatsApp+Image+2025-11-11+at+12.26.39.jpeg' },
+  ]
 
+  const [slides, setSlides] = useState(defaultGallerySlides)
+  const [isAddingNew, setIsAddingNew] = useState(false)
+  const [newSlideText, setNewSlideText] = useState('')
+  const [newSlideFile, setNewSlideFile] = useState<File | null>(null)
+  const [uploadingGallery, setUploadingGallery] = useState(false)
+  const [newSlideError, setNewSlideError] = useState('')
+
+  // Load from localStorage
   useEffect(() => {
-    const load = async () => {
-      setLoading(true)
+    const saved = localStorage.getItem('gallerySlides')
+    if (saved) {
       try {
-        const res = await fetch('/api/gallery?category=all', { cache: 'no-store' })
-        const data = await res.json()
-        setItems({
-          indoor: data.indoor || [],
-          outdoor: data.outdoor || [],
-          pool: data.pool || [],
-          events: data.events || [],
-        })
-      } finally {
-        setLoading(false)
+        setSlides(JSON.parse(saved))
+      } catch (e) {
+        console.error('Error loading gallery:', e)
       }
     }
-    load()
   }, [])
 
 
-  const uploadFiles = async (files: File[]) => {
-    if (!files || files.length === 0) return
-    setIsUploading(true)
+  // Auto-save to localStorage
+  useEffect(() => {
+    if (slides.length > 0) {
+      localStorage.setItem('gallerySlides', JSON.stringify(slides))
+    }
+  }, [slides])
+
+  const handleUpdateSlideText = (id: string, newText: string) => {
+    setSlides(prev => prev.map(s => s.id === id ? { ...s, title: newText } : s))
+  }
+
+  const handleUpdateSlideImage = async (id: string, file: File) => {
+    setUploadingGallery(true)
     try {
-      for (const file of files) {
-        const form = new FormData()
-        form.append('file', file)
-        form.append('category', category)
-        form.append('alt', file.name)
-        form.append('title', '')
-        const res = await fetch('/api/gallery/upload', { method: 'POST', body: form })
-        if (res.ok) {
-          const doc = await res.json()
-          setItems((prev) => ({ ...prev, [category]: [doc, ...(prev[category] || [])] }))
-        }
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('category', 'events')
+      formData.append('alt', 'Gallery slide')
+      formData.append('title', 'Gallery')
+      
+      const response = await fetch('/api/gallery/upload', { method: 'POST', body: formData })
+      if (response.ok) {
+        const data = await response.json()
+        const newImageUrl = data.externalUrl || data.url
+        setSlides(prev => prev.map(s => s.id === id ? { ...s, imageUrl: newImageUrl } : s))
       }
+    } catch (error) {
+      console.error('Upload error:', error)
     } finally {
-      setIsUploading(false)
-      setPendingFiles([])
+      setUploadingGallery(false)
     }
   }
 
-  const categories: Array<{ id: 'indoor'|'outdoor'|'pool'|'events'; label: string }> = [
-    { id: 'indoor', label: 'Interior' },
-    { id: 'outdoor', label: 'Exterior' },
-    { id: 'pool', label: 'Piscină' },
-    { id: 'events', label: 'Evenimente' },
-  ]
+  const handleDeleteSlide = (id: string) => {
+    setSlides(prev => prev.filter(s => s.id !== id))
+  }
+
+  const handleAddNewSlide = async () => {
+    // Validare
+    setNewSlideError('')
+    
+    if (!newSlideFile) {
+      setNewSlideError('Te rog să selectezi o imagine!')
+      return
+    }
+    
+    if (!newSlideText.trim()) {
+      setNewSlideError('Te rog să completezi textul pentru slide!')
+      return
+    }
+    
+    setUploadingGallery(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', newSlideFile)
+      formData.append('category', 'events')
+      formData.append('alt', newSlideText.trim())
+      formData.append('title', newSlideText.trim())
+      
+      const response = await fetch('/api/gallery/upload', { method: 'POST', body: formData })
+      if (response.ok) {
+        const data = await response.json()
+        const newSlide = {
+          id: Date.now().toString(),
+          title: newSlideText.trim(),
+          imageUrl: data.externalUrl || data.url
+        }
+        setSlides(prev => [...prev, newSlide])
+        
+        // Reset form
+        setNewSlideText('')
+        setNewSlideFile(null)
+        setNewSlideError('')
+        setIsAddingNew(false)
+      } else {
+        setNewSlideError('Eroare la încărcarea imaginii. Te rog încearcă din nou.')
+      }
+    } catch (error) {
+      console.error('Upload error:', error)
+      setNewSlideError('Eroare la încărcarea imaginii. Te rog încearcă din nou.')
+    } finally {
+      setUploadingGallery(false)
+    }
+  }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <h3 className="text-lg font-medium text-gray-900">Galerie imagini</h3>
-        <div className="flex flex-wrap gap-2">
-          {categories.map((c) => (
-            <button
-              key={c.id}
-              onClick={() => setCategory(c.id)}
-              className={`px-4 py-2 rounded-md text-sm font-medium ${category === c.id ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
-            >
-              {c.label}
-            </button>
-          ))}
-        </div>
+      <div className="mb-6">
+        <h3 className="text-xl font-bold text-gray-900 mb-2">Gestionare Galerie Carusel</h3>
+        <p className="text-sm text-gray-600">Editează imaginile și textele care apar în caruselul de pe pagina principală.</p>
       </div>
 
-
-      <div
-        onDragOver={(e) => { e.preventDefault(); setDragActive(true) }}
-        onDragLeave={() => setDragActive(false)}
-        onDrop={(e) => { e.preventDefault(); setDragActive(false); setPendingFiles(Array.from(e.dataTransfer.files)) }}
-        className={`border-2 border-dashed rounded-lg p-6 text-center ${dragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
-      >
-        <p className="text-sm text-gray-600 mb-3">Trage și plasează imagini aici sau alege din calculator</p>
-        <input
-          type="file"
-          accept="image/*"
-          multiple
-          onChange={(e) => setPendingFiles(e.target.files ? Array.from(e.target.files) : [])}
-          className="block w-full text-sm text-gray-900 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-        />
-        {pendingFiles.length > 0 && (
-          <div className="mt-4 text-sm text-gray-700">
-            <div className="flex items-center justify-between">
-              <span>{pendingFiles.length} fișier(e) selectate</span>
-              <button
-                disabled={isUploading}
-                onClick={() => uploadFiles(pendingFiles)}
-                className="px-3 py-1.5 bg-blue-600 text-white rounded-md disabled:opacity-50"
-              >
-                {isUploading ? 'Se încarcă...' : 'Încarcă'}
-              </button>
+      {/* Lista cu slide-uri existente */}
+      <div className="space-y-4">
+        {slides.map((slide, index) => (
+          <div key={slide.id} className="border border-gray-200 rounded-lg p-4 flex gap-4 items-start">
+            {/* Thumbnail imagine */}
+            <div className="w-32 h-32 flex-shrink-0 relative">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img 
+                src={slide.imageUrl} 
+                alt={slide.title}
+                className="w-full h-full object-cover rounded"
+              />
+              {/* Buton edit imagine - mereu vizibil */}
+              <label className="absolute bottom-1 right-1 cursor-pointer bg-blue-600 text-white px-2 py-1 rounded text-xs font-medium hover:bg-blue-700 shadow-lg flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploadingGallery}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) {
+                      handleUpdateSlideImage(slide.id, file)
+                    }
+                  }}
+                />
+              </label>
             </div>
-            <ul className="mt-2 max-h-32 overflow-auto text-left list-disc list-inside">
-              {pendingFiles.map((f, i) => (
-                <li key={i} className="truncate">{f.name}</li>
-              ))}
-            </ul>
+
+            {/* Text editabil + acțiuni */}
+            <div className="flex-1">
+              <input
+                type="text"
+                value={slide.title}
+                onChange={(e) => handleUpdateSlideText(slide.id, e.target.value)}
+                placeholder="Text pentru slide"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm mb-2"
+              />
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500">Slide {index + 1}</span>
+                <button
+                  onClick={() => handleDeleteSlide(slide.id)}
+                  className="text-red-600 hover:text-red-700 text-xs flex items-center gap-1"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  Șterge
+                </button>
+              </div>
+            </div>
           </div>
-        )}
+        ))}
       </div>
 
-      {loading ? (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="aspect-square rounded-lg bg-gray-200 animate-pulse" />
-          ))}
+      {/* Form pentru adăugare slide nou */}
+      {isAddingNew ? (
+        <div className="border-2 border-dashed border-blue-300 rounded-lg p-4 bg-blue-50">
+          <h4 className="font-medium text-gray-900 mb-3">Adaugă slide nou</h4>
+          
+          {/* Mesaj eroare */}
+          {newSlideError && (
+            <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm flex items-start gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              <span>{newSlideError}</span>
+            </div>
+          )}
+          
+          {/* Input file */}
+          <div className="mb-3">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) {
+                  setNewSlideFile(file)
+                  setNewSlideError('')
+                }
+              }}
+              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+              disabled={uploadingGallery}
+            />
+            {newSlideFile && (
+              <p className="mt-1 text-xs text-green-600 flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                {newSlideFile.name}
+              </p>
+            )}
+          </div>
+          
+          {/* Input text */}
+          <input
+            type="text"
+            value={newSlideText}
+            onChange={(e) => {
+              setNewSlideText(e.target.value)
+              setNewSlideError('')
+            }}
+            placeholder="Text pentru slide (ex: O grădină plină de verdeață)"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm mb-3"
+            disabled={uploadingGallery}
+          />
+          
+          {/* Butoane */}
+          <div className="flex gap-2">
+            <button
+              onClick={handleAddNewSlide}
+              disabled={uploadingGallery}
+              className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed flex items-center gap-2 font-medium"
+            >
+              {uploadingGallery ? (
+                <>
+                  <svg className="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                  </svg>
+                  Se încarcă...
+                </>
+              ) : (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  Salvează
+                </>
+              )}
+            </button>
+            <button
+              onClick={() => {
+                setIsAddingNew(false)
+                setNewSlideText('')
+                setNewSlideFile(null)
+                setNewSlideError('')
+              }}
+              disabled={uploadingGallery}
+              className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Anulează
+            </button>
+          </div>
         </div>
       ) : (
-        <ReorderableGrid
-          items={items[category] || []}
-          onDelete={async (id) => {
-            const res = await fetch(`/api/gallery?id=${id}`, { method: 'DELETE' })
-            if (res.ok) setItems((prev) => ({ ...prev, [category]: (prev[category] || []).filter((x) => x.id !== id) }))
-          }}
-          onReorder={async (ordered) => {
-            setItems((prev) => ({ ...prev, [category]: ordered }))
-            await fetch('/api/gallery/reorder', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ orderedIds: ordered.map((x: GalleryItem) => x.id) }),
-            })
-          }}
-        />
+        <button
+          onClick={() => setIsAddingNew(true)}
+          className="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2"
+        >
+          <Upload className="w-5 h-5" />
+          Adaugă Slide Nou
+        </button>
       )}
     </div>
   )
 }
 
-function ReorderableGrid({ items, onDelete, onReorder }: { items: GalleryItem[]; onDelete: (id: string) => void | Promise<void>; onReorder: (items: GalleryItem[]) => void | Promise<void> }) {
-  const [dragIdx, setDragIdx] = useState<number | null>(null)
-  const [list, setList] = useState<GalleryItem[]>(items)
 
-  useEffect(() => setList(items), [items])
+// FAQ Manager Component
+interface FAQItem {
+  id: string
+  question: string
+  answer: string
+}
 
-  const onDragStart = (idx: number) => setDragIdx(idx)
-  const onDragOver = (e: React.DragEvent, idx: number) => {
-    e.preventDefault()
-    if (dragIdx === null || dragIdx === idx) return
-    const updated = [...list]
-    const [moved] = updated.splice(dragIdx, 1)
-    updated.splice(idx, 0, moved)
-    setList(updated)
-    setDragIdx(idx)
+function FAQManager() {
+  const defaultFAQs: FAQItem[] = [
+    {
+      id: '1',
+      question: 'Care este capacitatea maximă a locației?',
+      answer: 'Locația noastră poate găzdui până la 200 de persoane. Avem atât spațiu exterior cu piscină, cât și sală interioară elegantă, perfect echipate pentru evenimente de orice dimensiune. Facilități precum parcarea, toaletele și zona de catering sunt proiectate pentru a susține acest număr de participanți.',
+    },
+    {
+      id: '2',
+      question: 'Ce facem în caz de vreme nefavorabilă?',
+      answer: 'Avem atât spațiu exterior, cât și interior complet acoperit și amenajat. În cazul ploii sau vremii nefavorabile, evenimentul poate fi mutat în sala interioară, fără a compromite atmosfera sau calitatea petrecerii. Echipa noastră este pregătită să se adapteze rapid oricăror condiții meteo.',
+    },
+    {
+      id: '3',
+      question: 'Aveți parcare disponibilă?',
+      answer: 'Da, avem o parcare privată suficient de mare pentru a acomoda toți invitații. Parcarea este gratuită și este situată în imediata apropiere a locației pentru confortul maxim al oaspeților.',
+    },
+    {
+      id: '4',
+      question: 'Putem aduce noi mâncarea și băutura?',
+      answer: 'Pentru a menține standardele de calitate și siguranță alimentară, colaborăm cu parteneri verificați pentru catering. Putem discuta despre preferințele voastre culinare și vă putem recomanda opțiuni personalizate care să se potrivească perfect evenimentului vostru.',
+    },
+    {
+      id: '5',
+      question: 'Organizați mai multe evenimente în același timp?',
+      answer: 'Nu. Organizăm un singur eveniment pe zi pentru un singur client. Locația este disponibilă exclusiv pentru dumneavoastră în acea zi, asigurând intimitate completă și atenție deplină din partea echipei noastre.',
+    },
+    {
+      id: '6',
+      question: 'Ce servicii sunt incluse în pachetul de bază?',
+      answer: 'Pachetul de bază include: închirierea spațiului pentru întreaga zi, mobilier (mese, scaune), decorațiuni de bază, echipament audio-video modern, iluminat ambiental, acces la piscină și grădină, și suportul echipei noastre pe toată durata evenimentului. Putem personaliza pachetul în funcție de nevoile voastre specifice.',
+    },
+  ]
+
+  const [faqs, setFaqs] = useState<FAQItem[]>(defaultFAQs)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [isAddingNew, setIsAddingNew] = useState(false)
+  const [newQuestion, setNewQuestion] = useState('')
+  const [newAnswer, setNewAnswer] = useState('')
+  const [faqError, setFaqError] = useState('')
+
+  // Load from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('faqItems')
+    if (saved) {
+      try {
+        setFaqs(JSON.parse(saved))
+      } catch (e) {
+        console.error('Error loading FAQs:', e)
+      }
+    }
+  }, [])
+
+  // Auto-save to localStorage
+  useEffect(() => {
+    if (faqs.length > 0) {
+      localStorage.setItem('faqItems', JSON.stringify(faqs))
+    }
+  }, [faqs])
+
+  const handleUpdateQuestion = (id: string, newQuestion: string) => {
+    setFaqs(prev => prev.map(f => f.id === id ? { ...f, question: newQuestion } : f))
   }
-  const onDragEnd = async () => {
-    setDragIdx(null)
-    await onReorder(list)
+
+  const handleUpdateAnswer = (id: string, newAnswer: string) => {
+    setFaqs(prev => prev.map(f => f.id === id ? { ...f, answer: newAnswer } : f))
+  }
+
+  const handleDeleteFAQ = (id: string) => {
+    if (confirm('Sigur vrei să ștergi această întrebare?')) {
+      setFaqs(prev => prev.filter(f => f.id !== id))
+    }
+  }
+
+  const handleAddNewFAQ = () => {
+    // Validare
+    setFaqError('')
+    
+    if (!newQuestion.trim()) {
+      setFaqError('Te rog să completezi întrebarea!')
+      return
+    }
+    
+    if (!newAnswer.trim()) {
+      setFaqError('Te rog să completezi răspunsul!')
+      return
+    }
+
+    const newFAQ: FAQItem = {
+      id: Date.now().toString(),
+      question: newQuestion.trim(),
+      answer: newAnswer.trim(),
+    }
+
+    setFaqs(prev => [...prev, newFAQ])
+    
+    // Reset form
+    setNewQuestion('')
+    setNewAnswer('')
+    setFaqError('')
+    setIsAddingNew(false)
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-      {list.map((img: GalleryItem, idx: number) => (
-        <div
-          key={img.id}
-          draggable
-          onDragStart={() => onDragStart(idx)}
-          onDragOver={(e) => onDragOver(e, idx)}
-          onDragEnd={onDragEnd}
-          className="aspect-square rounded-lg overflow-hidden border border-gray-200 relative"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={img.externalUrl || img.url} alt={img.alt} className="w-full h-full object-cover" />
-          <div className="absolute bottom-0 left-0 right-0 bg-black/40 text-white text-xs px-2 py-1 truncate">{img.alt}</div>
-          <button
-            onClick={() => onDelete(img.id)}
-            className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded"
-          >
-            Șterge
-          </button>
+    <div className="space-y-6">
+      <div className="mb-6">
+        <h3 className="text-xl font-bold text-gray-900 mb-2">Gestionare Întrebări Frecvente</h3>
+        <p className="text-sm text-gray-600">Editează întrebările și răspunsurile care apar pe pagina principală.</p>
+      </div>
+
+      {/* Lista cu întrebări existente */}
+      <div className="space-y-4">
+        {faqs.map((faq, index) => (
+          <div key={faq.id} className="border border-gray-200 rounded-lg p-4 space-y-3">
+            <div className="flex items-start justify-between gap-2">
+              <span className="text-xs font-medium text-gray-500">Întrebarea {index + 1}</span>
+              <button
+                onClick={() => handleDeleteFAQ(faq.id)}
+                className="text-red-600 hover:text-red-700 text-xs flex items-center gap-1"
+              >
+                <Trash2 className="w-3 h-3" />
+                Șterge
+              </button>
+            </div>
+            
+            {/* Întrebare editabilă */}
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Întrebare:</label>
+              <textarea
+                value={faq.question}
+                onChange={(e) => handleUpdateQuestion(faq.id, e.target.value)}
+                placeholder="Întrebarea..."
+                rows={2}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              />
+            </div>
+
+            {/* Răspuns editabil */}
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Răspuns:</label>
+              <textarea
+                value={faq.answer}
+                onChange={(e) => handleUpdateAnswer(faq.id, e.target.value)}
+                placeholder="Răspunsul..."
+                rows={4}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Form pentru adăugare FAQ nou */}
+      {isAddingNew ? (
+        <div className="border-2 border-dashed border-blue-300 rounded-lg p-4 bg-blue-50">
+          <h4 className="font-medium text-gray-900 mb-3">Adaugă întrebare nouă</h4>
+          
+          {/* Mesaj eroare */}
+          {faqError && (
+            <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm flex items-start gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              <span>{faqError}</span>
+            </div>
+          )}
+          
+          {/* Input întrebare */}
+          <div className="mb-3">
+            <label className="block text-xs font-medium text-gray-700 mb-1">Întrebare:</label>
+            <textarea
+              value={newQuestion}
+              onChange={(e) => {
+                setNewQuestion(e.target.value)
+                setFaqError('')
+              }}
+              placeholder="Scrie întrebarea (ex: Care este capacitatea maximă?)"
+              rows={2}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            />
+          </div>
+          
+          {/* Input răspuns */}
+          <div className="mb-3">
+            <label className="block text-xs font-medium text-gray-700 mb-1">Răspuns:</label>
+            <textarea
+              value={newAnswer}
+              onChange={(e) => {
+                setNewAnswer(e.target.value)
+                setFaqError('')
+              }}
+              placeholder="Scrie răspunsul..."
+              rows={4}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            />
+          </div>
+          
+          {/* Butoane */}
+          <div className="flex gap-2">
+            <button
+              onClick={handleAddNewFAQ}
+              className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 font-medium"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+              Salvează
+            </button>
+            <button
+              onClick={() => {
+                setIsAddingNew(false)
+                setNewQuestion('')
+                setNewAnswer('')
+                setFaqError('')
+              }}
+              className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+            >
+              Anulează
+            </button>
+          </div>
         </div>
-      ))}
+      ) : (
+        <button
+          onClick={() => setIsAddingNew(true)}
+          className="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Adaugă Întrebare Nouă
+        </button>
+      )}
     </div>
   )
 }
+
 
 function HeaderAdminSection({ value, onChange }: { value?: SiteData['header']; onChange: (h: SiteData['header']) => void }) {
   const [localNav, setLocalNav] = useState(value?.nav ?? [

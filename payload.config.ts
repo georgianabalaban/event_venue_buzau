@@ -35,7 +35,33 @@ export default buildConfig({
   },
   db: mongooseAdapter({
     url: process.env.DATABASE_URI || '',
+    connectOptions: {
+      serverSelectionTimeoutMS: 10000, // 10 secunde timeout
+      socketTimeoutMS: 45000, // 45 secunde socket timeout
+      maxPoolSize: 10, // Limiteaza conexiunile simultane
+    },
   }),
   sharp: require('sharp'),
+  onInit: async (payload) => {
+    // Graceful shutdown handler
+    const gracefulShutdown = async () => {
+      console.log('\n🛑 Shutting down gracefully...')
+      try {
+        // Close database connections
+        if (payload.db && typeof payload.db.destroy === 'function') {
+          await payload.db.destroy()
+          console.log('✅ Database connections closed')
+        }
+        process.exit(0)
+      } catch (error) {
+        console.error('❌ Error during shutdown:', error)
+        process.exit(1)
+      }
+    }
+
+    process.on('SIGTERM', gracefulShutdown)
+    process.on('SIGINT', gracefulShutdown)
+    process.on('SIGUSR2', gracefulShutdown) // nodemon restart
+  },
 })
 
