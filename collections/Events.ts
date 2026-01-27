@@ -1,35 +1,41 @@
-import { CollectionConfig } from 'payload'
+import { CollectionConfig } from 'payload/types'
 
 export const Events: CollectionConfig = {
   slug: 'events',
   admin: {
     useAsTitle: 'title',
-    defaultColumns: ['title', 'date', 'category'],
+    defaultColumns: ['title', 'date', 'category', 'price', 'availableSpots'],
   },
   access: {
     read: () => true,
+    create: () => true,
+    update: () => true,
+    delete: () => true,
   },
   fields: [
     {
       name: 'title',
       type: 'text',
       required: true,
-      label: 'Titlu eveniment',
+      label: 'Titlu',
     },
     {
       name: 'description',
-      type: 'richText',
+      type: 'textarea',
+      required: true,
       label: 'Descriere',
     },
     {
       name: 'date',
       type: 'date',
       required: true,
-      label: 'Data evenimentului',
+      label: 'Dată eveniment',
     },
     {
       name: 'category',
       type: 'select',
+      required: true,
+      label: 'Categorie',
       options: [
         { label: 'Corporate', value: 'corporate' },
         { label: 'Petrecere', value: 'party' },
@@ -37,24 +43,21 @@ export const Events: CollectionConfig = {
         { label: 'Aniversare', value: 'birthday' },
         { label: 'Altele', value: 'other' },
       ],
-      label: 'Categorie',
-    },
-    {
-      name: 'image',
-      type: 'upload',
-      relationTo: 'gallery',
-      label: 'Imagine',
+      defaultValue: 'party',
     },
     {
       name: 'price',
       type: 'number',
-      label: 'Preț (lei)',
+      required: true,
+      label: 'Preț (RON)',
+      min: 0,
     },
     {
       name: 'availableSpots',
       type: 'number',
+      required: true,
       label: 'Locuri disponibile',
+      min: 0,
     },
   ],
 }
-

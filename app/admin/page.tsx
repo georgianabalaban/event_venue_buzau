@@ -701,7 +701,7 @@ export default function AdminPanel() {
     { id: 'about', label: 'Despre', icon: Users },
     { id: 'services', label: 'Servicii', icon: Settings },
     { id: 'service-details', label: 'Detalii Servicii', icon: FileText },
-    { id: 'events', label: 'Evenimente', icon: Calendar },
+    { id: 'events', label: 'Evenimente Tematice', icon: Calendar },
     { id: 'gallery', label: 'Galerie', icon: Image },
     { id: 'faq', label: 'Întrebări Frecvente', icon: FileText },
   ]
@@ -1256,51 +1256,7 @@ export default function AdminPanel() {
                 )}
 
                 {activeTab === 'events' && (
-                  <div className="space-y-6">
-                    <div className="flex justify-between items-center">
-                      <h3 className="text-lg font-medium text-gray-900">Evenimente tematice</h3>
-                      <button className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
-                        Adaugă eveniment
-                      </button>
-                    </div>
-                    <div className="space-y-4">
-                      {[
-                        { title: 'Workshop de Fotografie', date: '2024-12-15', price: 150, spots: 20 },
-                        { title: 'Petrecere de Anul Nou', date: '2024-12-31', price: 200, spots: 100 }
-                      ].map((event, index) => (
-                        <div key={index} className="border border-gray-200 rounded-lg p-4">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <input
-                              type="text"
-                              defaultValue={event.title}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              onChange={() => setIsEditing(true)}
-                            />
-                            <input
-                              type="date"
-                              defaultValue={event.date}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              onChange={() => setIsEditing(true)}
-                            />
-                            <input
-                              type="number"
-                              defaultValue={event.price}
-                              placeholder="Preț"
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              onChange={() => setIsEditing(true)}
-                            />
-                            <input
-                              type="number"
-                              defaultValue={event.spots}
-                              placeholder="Locuri disponibile"
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              onChange={() => setIsEditing(true)}
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <EventsManager />
                 )}
 
                 {activeTab === 'gallery' && (
@@ -1867,6 +1823,666 @@ function FAQManager() {
             <line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
           Adaugă Întrebare Nouă
+        </button>
+      )}
+    </div>
+  )
+}
+
+
+// Events Manager Component
+interface EventItem {
+  id: string
+  title: string
+  description: string
+  date: string
+  category: string
+  price: number
+  availableSpots: number
+}
+
+function EventsManager() {
+  const defaultEvents: EventItem[] = [
+    {
+      id: '1',
+      title: 'Petrecere de Crăciun',
+      description: 'Sărbătorește Crăciunul într-o atmosferă magică',
+      date: '2025-12-20',
+      category: 'party',
+      price: 150,
+      availableSpots: 50,
+    },
+    {
+      id: '2',
+      title: 'Revelion 2026',
+      description: 'Întâmpină Anul Nou cu stil',
+      date: '2025-12-31',
+      category: 'party',
+      price: 250,
+      availableSpots: 30,
+    },
+  ]
+
+  const [events, setEvents] = useState<EventItem[]>(defaultEvents)
+  const [isAddingNew, setIsAddingNew] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editingEvent, setEditingEvent] = useState<EventItem | null>(null)
+  const [eventError, setEventError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveNotification, setSaveNotification] = useState<{ show: boolean; type: 'success' | 'error'; message: string }>({ show: false, type: 'success', message: '' })
+
+  // Form states for new event
+  const [newTitle, setNewTitle] = useState('')
+  const [newDescription, setNewDescription] = useState('')
+  const [newDate, setNewDate] = useState('')
+  const [newCategory, setNewCategory] = useState('party')
+  const [newPrice, setNewPrice] = useState('')
+  const [newSpots, setNewSpots] = useState('')
+
+  // Show notification helper
+  const showNotification = (type: 'success' | 'error', message: string) => {
+    setSaveNotification({ show: true, type, message })
+    setTimeout(() => {
+      setSaveNotification({ show: false, type, message: '' })
+    }, 3000)
+  }
+
+  // Format date for input (extract YYYY-MM-DD from ISO string or Date object)
+  const formatDateForInput = (date: string | Date): string => {
+    if (!date) return ''
+    try {
+      const dateObj = typeof date === 'string' ? new Date(date) : date
+      const year = dateObj.getFullYear()
+      const month = String(dateObj.getMonth() + 1).padStart(2, '0')
+      const day = String(dateObj.getDate()).padStart(2, '0')
+      return `${year}-${month}-${day}`
+    } catch (error) {
+      console.error('Error formatting date:', error)
+      return ''
+    }
+  }
+
+  // Load events from DB with localStorage fallback
+  useEffect(() => {
+    const loadEvents = async () => {
+      setIsLoading(true)
+      try {
+        // Try loading from localStorage first (immediate)
+        const cached = localStorage.getItem('eventsCache')
+        if (cached) {
+          try {
+            const cachedEvents = JSON.parse(cached)
+            setEvents(cachedEvents)
+          } catch (e) {
+            console.error('Error parsing cached events:', e)
+          }
+        }
+        
+        // Then try loading from DB (will update if DB responds)
+        const response = await fetch('/api/events')
+        if (response.ok) {
+          const data = await response.json()
+          const eventsData = data.length > 0 ? data : defaultEvents
+          setEvents(eventsData)
+          // Cache to localStorage
+          localStorage.setItem('eventsCache', JSON.stringify(eventsData))
+        }
+      } catch (error) {
+        console.error('Error loading events:', error)
+        // If DB fails, use cached or default
+        const cached = localStorage.getItem('eventsCache')
+        if (cached) {
+          setEvents(JSON.parse(cached))
+        }
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    loadEvents()
+  }, [])
+
+  const categoryOptions = [
+    { value: 'corporate', label: 'Corporate' },
+    { value: 'party', label: 'Petrecere' },
+    { value: 'wedding', label: 'Nuntă' },
+    { value: 'birthday', label: 'Aniversare' },
+    { value: 'other', label: 'Altele' },
+  ]
+
+  const handleEditEvent = (event: EventItem) => {
+    setEditingId(event.id)
+    setEditingEvent({ ...event })
+  }
+
+  const handleCancelEdit = () => {
+    setEditingId(null)
+    setEditingEvent(null)
+  }
+
+  const handleUpdateField = (field: keyof EventItem, value: string | number) => {
+    if (editingEvent) {
+      setEditingEvent({ ...editingEvent, [field]: value })
+    }
+  }
+
+  const handleSaveEvent = async () => {
+    if (!editingEvent) return
+    
+    setIsSaving(true)
+    try {
+      // Check if ID looks like MongoDB ID (24 hex chars) or local ID
+      const isMongoId = /^[a-f\d]{24}$/i.test(editingEvent.id)
+      
+      if (!isMongoId) {
+        // This is a local/default event - Create it in DB
+        const response = await fetch('/api/events', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: editingEvent.title,
+            description: editingEvent.description,
+            date: editingEvent.date,
+            category: editingEvent.category,
+            price: editingEvent.price,
+            availableSpots: editingEvent.availableSpots,
+          }),
+        })
+        
+        if (response.ok) {
+          const savedEvent = await response.json()
+          // Update local state with new MongoDB ID
+          setEvents(prev => {
+            const updated = prev.map(e => e.id === editingEvent.id ? savedEvent : e)
+            localStorage.setItem('eventsCache', JSON.stringify(updated))
+            return updated
+          })
+          showNotification('success', 'Eveniment salvat cu succes!')
+          setEditingId(null)
+          setEditingEvent(null)
+        } else {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+          showNotification('error', `Eroare: ${errorData.error || 'Conexiune DB eșuată'}`)
+        }
+      } else {
+        // Update existing DB event
+        const response = await fetch('/api/events', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(editingEvent),
+        })
+        
+        if (response.ok) {
+          setEvents(prev => {
+            const updated = prev.map(e => e.id === editingEvent.id ? editingEvent : e)
+            localStorage.setItem('eventsCache', JSON.stringify(updated))
+            return updated
+          })
+          showNotification('success', 'Modificări salvate cu succes!')
+          setEditingId(null)
+          setEditingEvent(null)
+        } else {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+          showNotification('error', `Eroare: ${errorData.error || 'Conexiune DB eșuată'}`)
+        }
+      }
+    } catch (error) {
+      console.error('Error saving event:', error)
+      showNotification('error', 'Eroare la salvarea în DB!')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleDeleteEvent = async (id: string) => {
+    if (!confirm('Sigur vrei să ștergi acest eveniment?')) return
+    
+    try {
+      // Check if it's a MongoDB ID (exists in DB) or local ID
+      const isMongoId = /^[a-f\d]{24}$/i.test(id)
+      
+      if (isMongoId) {
+        // Delete from DB
+        const response = await fetch(`/api/events?id=${id}`, {
+          method: 'DELETE',
+        })
+        
+        if (response.ok) {
+          setEvents(prev => {
+            const updated = prev.filter(e => e.id !== id)
+            localStorage.setItem('eventsCache', JSON.stringify(updated))
+            return updated
+          })
+          showNotification('success', 'Eveniment șters cu succes!')
+        } else {
+          showNotification('error', 'Eroare la ștergerea evenimentului!')
+        }
+      } else {
+        // Just remove from local state (wasn't in DB yet)
+        setEvents(prev => {
+          const updated = prev.filter(e => e.id !== id)
+          localStorage.setItem('eventsCache', JSON.stringify(updated))
+          return updated
+        })
+        showNotification('success', 'Eveniment șters!')
+      }
+    } catch (error) {
+      console.error('Error deleting event:', error)
+      showNotification('error', 'Eroare la ștergerea evenimentului!')
+    }
+  }
+
+  const handleAddNewEvent = async () => {
+    // Validare
+    setEventError('')
+    
+    if (!newTitle.trim()) {
+      setEventError('Te rog să completezi titlul evenimentului!')
+      return
+    }
+    
+    if (!newDescription.trim()) {
+      setEventError('Te rog să completezi descrierea!')
+      return
+    }
+    
+    if (!newDate) {
+      setEventError('Te rog să selectezi data evenimentului!')
+      return
+    }
+
+    const price = parseFloat(newPrice)
+    const spots = parseInt(newSpots)
+
+    if (!newPrice || isNaN(price) || price <= 0) {
+      setEventError('Te rog să introduci un preț valid!')
+      return
+    }
+
+    if (!newSpots || isNaN(spots) || spots <= 0) {
+      setEventError('Te rog să introduci numărul de locuri disponibile!')
+      return
+    }
+
+    setIsSaving(true)
+    
+    try {
+      const response = await fetch('/api/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: newTitle.trim(),
+          description: newDescription.trim(),
+          date: newDate,
+          category: newCategory,
+          price: price,
+          availableSpots: spots,
+        }),
+      })
+
+      if (response.ok) {
+        const savedEvent = await response.json()
+        setEvents(prev => {
+          const updated = [...prev, savedEvent]
+          localStorage.setItem('eventsCache', JSON.stringify(updated))
+          return updated
+        })
+        
+        // Reset form
+        setNewTitle('')
+        setNewDescription('')
+        setNewDate('')
+        setNewCategory('party')
+        setNewPrice('')
+        setNewSpots('')
+        setEventError('')
+        setIsAddingNew(false)
+        
+        showNotification('success', 'Eveniment nou adăugat cu succes!')
+      } else {
+        // Get error details
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        console.error('API Error:', response.status, errorData)
+        const errorMessage = `Eroare ${response.status}: ${errorData.error || 'Conexiune DB eșuată'}`
+        setEventError(errorMessage)
+        showNotification('error', errorMessage)
+      }
+    } catch (error) {
+      console.error('Error creating event:', error)
+      setEventError('Eroare la salvarea evenimentului. Te rog încearcă din nou.')
+      showNotification('error', 'Eroare la salvarea evenimentului!')
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Notification Toast */}
+      {saveNotification.show && (
+        <div className={`fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-lg flex items-center gap-3 animate-in slide-in-from-top-2 ${
+          saveNotification.type === 'success' 
+            ? 'bg-green-500 text-white' 
+            : 'bg-red-500 text-white'
+        }`}>
+          {saveNotification.type === 'success' ? (
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+              <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="15" y1="9" x2="9" y2="15"/>
+              <line x1="9" y1="9" x2="15" y2="15"/>
+            </svg>
+          )}
+          <span className="font-medium">{saveNotification.message}</span>
+        </div>
+      )}
+
+      <div className="mb-6">
+        <h3 className="text-xl font-bold text-gray-900 mb-2">Gestionare Evenimente Tematice</h3>
+        <p className="text-sm text-gray-600">Editează evenimentele care apar pe pagina principală.</p>
+      </div>
+
+      {/* Lista cu evenimente existente */}
+      <div className="space-y-4">
+        {events.map((event, index) => {
+          const isEditing = editingId === event.id
+          const displayEvent = isEditing && editingEvent ? editingEvent : event
+          
+          return (
+            <div key={event.id} className="border border-gray-200 rounded-lg p-4 space-y-3">
+              <div className="flex items-start justify-between gap-2">
+                <span className="text-xs font-medium text-gray-500">Eveniment {index + 1}</span>
+                <div className="flex gap-2">
+                  {isEditing ? (
+                    <>
+                      <button
+                        onClick={handleSaveEvent}
+                        disabled={isSaving}
+                        className="text-green-600 hover:text-green-700 text-xs flex items-center gap-1 disabled:opacity-50"
+                      >
+                        <Save className="w-3 h-3" />
+                        {isSaving ? 'Salvare...' : 'Salvează'}
+                      </button>
+                      <button
+                        onClick={handleCancelEdit}
+                        disabled={isSaving}
+                        className="text-gray-600 hover:text-gray-700 text-xs flex items-center gap-1 disabled:opacity-50"
+                      >
+                        <X className="w-3 h-3" />
+                        Anulează
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => handleEditEvent(event)}
+                      className="text-blue-600 hover:text-blue-700 text-xs flex items-center gap-1"
+                    >
+                      <Settings className="w-3 h-3" />
+                      Editează
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleDeleteEvent(event.id)}
+                    disabled={isEditing}
+                    className="text-red-600 hover:text-red-700 text-xs flex items-center gap-1 disabled:opacity-50"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                    Șterge
+                  </button>
+                </div>
+              </div>
+              
+              {/* Grid pentru câmpuri */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* Titlu */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Titlu:</label>
+                  <input
+                    type="text"
+                    value={displayEvent.title}
+                    onChange={(e) => handleUpdateField('title', e.target.value)}
+                    placeholder="Titlul evenimentului"
+                    disabled={!isEditing}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed"
+                  />
+                </div>
+
+                {/* Dată */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Dată:</label>
+                  <input
+                    type="date"
+                    value={formatDateForInput(displayEvent.date)}
+                    onChange={(e) => handleUpdateField('date', e.target.value)}
+                    disabled={!isEditing}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed"
+                  />
+                </div>
+
+                {/* Categorie */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Categorie:</label>
+                  <select
+                    value={displayEvent.category}
+                    onChange={(e) => handleUpdateField('category', e.target.value)}
+                    disabled={!isEditing}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed"
+                  >
+                    {categoryOptions.map(cat => (
+                      <option key={cat.value} value={cat.value}>{cat.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Preț */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Preț (RON):</label>
+                  <input
+                    type="number"
+                    value={displayEvent.price}
+                    onChange={(e) => handleUpdateField('price', parseFloat(e.target.value) || 0)}
+                    placeholder="150"
+                    disabled={!isEditing}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed"
+                  />
+                </div>
+
+                {/* Locuri disponibile */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Locuri disponibile:</label>
+                  <input
+                    type="number"
+                    value={displayEvent.availableSpots}
+                    onChange={(e) => handleUpdateField('availableSpots', parseInt(e.target.value) || 0)}
+                    placeholder="50"
+                    disabled={!isEditing}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed"
+                  />
+                </div>
+              </div>
+
+              {/* Descriere (întreaga lățime) */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Descriere:</label>
+                <textarea
+                  value={displayEvent.description}
+                  onChange={(e) => handleUpdateField('description', e.target.value)}
+                  placeholder="Descrierea evenimentului..."
+                  rows={2}
+                  disabled={!isEditing}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed"
+                />
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Form pentru adăugare eveniment nou */}
+      {isAddingNew ? (
+        <div className="border-2 border-dashed border-blue-300 rounded-lg p-4 bg-blue-50">
+          <h4 className="font-medium text-gray-900 mb-3">Adaugă eveniment nou</h4>
+          
+          {/* Mesaj eroare */}
+          {eventError && (
+            <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm flex items-start gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              <span>{eventError}</span>
+            </div>
+          )}
+          
+          <div className="space-y-3">
+            {/* Grid pentru câmpuri */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {/* Titlu */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Titlu:</label>
+                <input
+                  type="text"
+                  value={newTitle}
+                  onChange={(e) => {
+                    setNewTitle(e.target.value)
+                    setEventError('')
+                  }}
+                  placeholder="ex: Petrecere de Crăciun"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                />
+              </div>
+
+              {/* Dată */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Dată:</label>
+                <input
+                  type="date"
+                  value={newDate}
+                  onChange={(e) => {
+                    setNewDate(e.target.value)
+                    setEventError('')
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                />
+              </div>
+
+              {/* Categorie */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Categorie:</label>
+                <select
+                  value={newCategory}
+                  onChange={(e) => setNewCategory(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                >
+                  {categoryOptions.map(cat => (
+                    <option key={cat.value} value={cat.value}>{cat.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Preț */}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Preț (RON):</label>
+                <input
+                  type="number"
+                  value={newPrice}
+                  onChange={(e) => {
+                    setNewPrice(e.target.value)
+                    setEventError('')
+                  }}
+                  placeholder="150"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                />
+              </div>
+
+              {/* Locuri disponibile */}
+              <div className="md:col-span-2">
+                <label className="block text-xs font-medium text-gray-700 mb-1">Locuri disponibile:</label>
+                <input
+                  type="number"
+                  value={newSpots}
+                  onChange={(e) => {
+                    setNewSpots(e.target.value)
+                    setEventError('')
+                  }}
+                  placeholder="50"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                />
+              </div>
+            </div>
+
+            {/* Descriere */}
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Descriere:</label>
+              <textarea
+                value={newDescription}
+                onChange={(e) => {
+                  setNewDescription(e.target.value)
+                  setEventError('')
+                }}
+                placeholder="Descrierea evenimentului..."
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              />
+            </div>
+          </div>
+          
+          {/* Butoane */}
+          <div className="flex gap-2 mt-4">
+            <button
+              onClick={handleAddNewEvent}
+              disabled={isSaving}
+              className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed flex items-center gap-2 font-medium"
+            >
+              {isSaving ? (
+                <>
+                  <svg className="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                  </svg>
+                  Se salvează...
+                </>
+              ) : (
+                <>
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  Salvează
+                </>
+              )}
+            </button>
+            <button
+              onClick={() => {
+                setIsAddingNew(false)
+                setNewTitle('')
+                setNewDescription('')
+                setNewDate('')
+                setNewCategory('party')
+                setNewPrice('')
+                setNewSpots('')
+                setEventError('')
+              }}
+              className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+            >
+              Anulează
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          onClick={() => setIsAddingNew(true)}
+          className="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Adaugă Eveniment
         </button>
       )}
     </div>

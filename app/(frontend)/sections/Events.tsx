@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion'
 import { Calendar, Users } from 'lucide-react'
 import { formatDate, formatPrice } from '@/lib/utils'
+import { useState, useEffect } from 'react'
 
 interface Event {
   id: string
@@ -22,28 +23,78 @@ interface EventsProps {
   events?: Event[]
 }
 
+const defaultEvents: Event[] = [
+  {
+    id: '1',
+    title: 'Petrecere de Crăciun',
+    description: 'Sărbătorește Crăciunul într-o atmosferă magică',
+    date: '2025-12-20',
+    category: 'party',
+    price: 150,
+    availableSpots: 50,
+  },
+  {
+    id: '2',
+    title: 'Revelion 2026',
+    description: 'Întâmpină Anul Nou cu stil',
+    date: '2025-12-31',
+    category: 'party',
+    price: 250,
+    availableSpots: 30,
+  },
+]
+
 export default function Events({ events }: EventsProps) {
-  // Default placeholder events if none provided
-  const displayEvents = events && events.length > 0 ? events : [
-    {
-      id: '1',
-      title: 'Petrecere de Crăciun',
-      description: 'Sărbătorește Crăciunul într-o atmosferă magică',
-      date: '2025-12-20',
-      category: 'party',
-      price: 150,
-      availableSpots: 50,
-    },
-    {
-      id: '2',
-      title: 'Revelion 2026',
-      description: 'Întâmpină Anul Nou cu stil',
-      date: '2025-12-31',
-      category: 'party',
-      price: 250,
-      availableSpots: 30,
-    },
-  ]
+  const [displayEvents, setDisplayEvents] = useState<Event[]>(defaultEvents)
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Load from API (from database) with localStorage fallback
+  useEffect(() => {
+    const loadEvents = async () => {
+      try {
+        // Try loading from localStorage first (admin edits cache)
+        const cached = localStorage.getItem('eventsCache')
+        if (cached) {
+          try {
+            const cachedEvents = JSON.parse(cached)
+            setDisplayEvents(cachedEvents.length > 0 ? cachedEvents : defaultEvents)
+          } catch (e) {
+            console.error('Error parsing cached events:', e)
+          }
+        }
+        
+        // Then try loading from DB (will update if DB responds)
+        const response = await fetch('/api/events')
+        if (response.ok) {
+          const data = await response.json()
+          setDisplayEvents(data.length > 0 ? data : defaultEvents)
+        } else if (events && events.length > 0) {
+          setDisplayEvents(events)
+        } else if (!cached) {
+          // No cache, no API, use default
+          setDisplayEvents(defaultEvents)
+        }
+      } catch (error) {
+        console.error('Error loading events from API:', error)
+        // Fallback to cached, props, or default
+        const cached = localStorage.getItem('eventsCache')
+        if (cached) {
+          try {
+            setDisplayEvents(JSON.parse(cached))
+          } catch (e) {
+            if (events && events.length > 0) {
+              setDisplayEvents(events)
+            }
+          }
+        } else if (events && events.length > 0) {
+          setDisplayEvents(events)
+        }
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    loadEvents()
+  }, [events])
 
   const categoryLabels: Record<string, string> = {
     corporate: 'Corporate',
@@ -71,8 +122,13 @@ export default function Events({ events }: EventsProps) {
           </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {displayEvents.map((event, index) => (
+        {isLoading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {displayEvents.map((event, index) => (
             <motion.div
               key={event.id}
               initial={{ opacity: 0, y: 30 }}
@@ -133,7 +189,8 @@ export default function Events({ events }: EventsProps) {
               <div className="absolute inset-0 bg-gradient-to-t from-primary-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
             </motion.div>
           ))}
-        </div>
+          </div>
+        )}
       </div>
     </section>
   )
