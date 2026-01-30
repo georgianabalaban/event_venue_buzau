@@ -118,6 +118,37 @@ export default function Footer({ settings }: FooterProps) {
                 © {currentYear} {settings?.siteName || 'Kids Club'}. Toate drepturile rezervate.
               </p>
             </div>
+
+            {/* Minimal Footer (Flying Fox Style) */}
+            <div className="pt-6 border-t border-gray-800 mt-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center text-xs text-gray-500">
+                {/* CUI Link */}
+                <div>
+                  <a 
+                    href="https://listafirme.ro/deco-inspiration-srl-41121751/" 
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-gray-300 transition-colors duration-300"
+                  >
+                    RO41121751
+                  </a>
+                </div>
+
+                {/* Termene si Conditii */}
+                <div>
+                  <span className="text-gray-500 cursor-not-allowed">
+                    Termene si Conditii
+                  </span>
+                </div>
+
+                {/* Politica de Confidentialitate */}
+                <div>
+                  <span className="text-gray-500 cursor-not-allowed">
+                    Politica de Confidentialitate
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
