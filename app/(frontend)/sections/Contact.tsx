@@ -123,8 +123,8 @@ export default function Contact({ data }: ContactProps) {
                   </div>
                   <div>
                     <h4 className="font-semibold text-gray-900 mb-1">Email</h4>
-                    <a href={`mailto:${data?.email || 'contact@eventvenue.ro'}`} className="text-gray-600 hover:text-primary-600 transition-colors">
-                      {data?.email || 'contact@eventvenue.ro'}
+                    <a href={`mailto:${data?.email || 'licolan18@gmail.com'}`} className="text-gray-600 hover:text-primary-600 transition-colors">
+                      {data?.email || 'licolan18@gmail.com'}
                     </a>
                   </div>
                 </div>
