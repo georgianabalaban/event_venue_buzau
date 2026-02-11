@@ -396,10 +396,10 @@ export default function Contact({ data }: ContactProps) {
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex items-center gap-2 text-green-600 bg-green-50 px-4 py-3 rounded-lg"
+                    className="flex items-center gap-2 text-green-700 bg-green-50 px-4 py-3 rounded-lg shadow-sm"
                   >
                     <CheckCircle className="w-5 h-5" />
-                    <span>Cererea a fost trimisă cu succes! Te vom contacta în curând.</span>
+                    <span>Mesajul tău a ajuns la noi. Îți mulțumim!</span>
                   </motion.div>
                 )}
 

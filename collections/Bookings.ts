@@ -6,6 +6,14 @@ export const Bookings: CollectionConfig = {
     useAsTitle: 'name',
     defaultColumns: ['name', 'email', 'eventDate', 'status', 'createdAt'],
   },
+  // Permitem crearea de booking-uri direct din site, fără autentificare în Payload
+  // (citirea și modificarea lor rămân rezervate pentru admin)
+  access: {
+    read: () => false,
+    create: () => true,
+    update: () => false,
+    delete: () => false,
+  },
   fields: [
     {
       name: 'name',

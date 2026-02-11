@@ -1,7 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
+import configPromise from '@payload-config'
+import { getPayloadHMR } from '@payloadcms/next/utilities'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
+
+// Normalizăm tipul de eveniment din frontend la valorile acceptate de colecția Bookings
+function normalizeEventType(rawType: string): string {
+  switch (rawType) {
+    case 'petreceri-copii':
+    case 'petreceri-botez':
+    case 'serbari':
+      return 'party' // toate sunt petreceri, intră la "Petrecere"
+    case 'aniversare':
+      return 'birthday'
+    case 'corporate':
+    case 'party':
+    case 'wedding':
+    case 'birthday':
+    case 'other':
+      return rawType
+    default:
+      return 'other'
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,29 +38,26 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Save booking to Payload CMS
-    const bookingResponse = await fetch(`${process.env.NEXT_PUBLIC_SERVER_URL}/api/bookings`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+    // Mapăm tipul de eveniment la valorile acceptate de Payload (Bookings collection)
+    const normalizedEventType = normalizeEventType(eventType)
+
+    // Obținem instanța Payload prin integrarea oficială @payloadcms/next
+    const payload = await getPayloadHMR({ config: configPromise })
+
+    // Save booking using Payload Local API (fără REST /api/bookings, mai robust în Next 16)
+    const booking = await payload.create({
+      collection: 'bookings',
+      data: {
         name,
         email,
         phone,
         eventDate,
-        eventType,
+        eventType: normalizedEventType,
         guestCount,
         message,
         status: 'new',
-      }),
+      },
     })
-
-    if (!bookingResponse.ok) {
-      throw new Error('Failed to save booking')
-    }
-
-    const booking = await bookingResponse.json()
 
     // Send email to customer
     const customerEmailData = {
@@ -100,7 +119,7 @@ export async function POST(req: NextRequest) {
             ${message ? `<p><strong>Mesaj:</strong> ${message}</p>` : ''}
           </div>
           
-          <p><a href="${process.env.NEXT_PUBLIC_SERVER_URL}/admin/collections/bookings/${booking.doc.id}" 
+          <p><a href="${process.env.NEXT_PUBLIC_SERVER_URL}/admin/collections/bookings/${booking.id}" 
              style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
             Vezi în Admin Panel
           </a></p>
@@ -122,7 +141,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       message: 'Rezervarea a fost trimisă cu succes!',
-      booking: booking.doc,
+      booking,
     })
   } catch (error) {
     console.error('Booking error:', error)
