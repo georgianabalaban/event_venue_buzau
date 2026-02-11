@@ -180,11 +180,22 @@ export default function Gallery() {
     setTouchEnd(0)
   }
 
-  // Keyboard navigation
+  // Keyboard navigation (nu blocăm Space în input-uri / formulare)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'ArrowLeft') handlePrev()
       if (e.key === 'ArrowRight') handleNext()
+
+      // Dacă utilizatorul scrie într-un input / textarea / contenteditable, nu intervenim
+      const target = e.target as HTMLElement | null
+      const tag = target?.tagName
+      const isFormField =
+        tag === 'INPUT' ||
+        tag === 'TEXTAREA' ||
+        (target as HTMLElement | null)?.isContentEditable
+
+      if (isFormField) return
+
       if (e.key === ' ') {
         e.preventDefault()
         setIsPlaying(prev => !prev)

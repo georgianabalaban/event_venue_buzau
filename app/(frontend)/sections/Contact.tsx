@@ -8,12 +8,22 @@ import * as z from 'zod'
 import { Mail, Phone, MapPin, Send, CheckCircle, AlertCircle } from 'lucide-react'
 
 const bookingSchema = z.object({
-  name: z.string().min(2, 'Numele trebuie să aibă minim 2 caractere'),
-  email: z.string().email('Email invalid'),
-  phone: z.string().min(10, 'Număr de telefon invalid'),
-  eventDate: z.string().min(1, 'Data este obligatorie'),
-  eventType: z.string().min(1, 'Tipul evenimentului este obligatoriu'),
-  guestCount: z.number().min(1, 'Numărul de invitați este obligatoriu').optional(),
+  email: z
+    .string()
+    .min(1, 'Email-ul este obligatoriu')
+    .email('Email invalid (ex: ion@email.ro)'),
+  phone: z
+    .string()
+    .min(1, 'Telefonul este obligatoriu')
+    .regex(
+      /^(\+4|0)?[0-9]{9,10}$/,
+      'Număr invalid (ex: 0712345678 sau +40712345678)'
+    ),
+  eventDate: z.string().min(1, 'Data evenimentului este obligatorie'),
+  eventType: z.string().min(1, 'Selectați tipul evenimentului'),
+  guestCount: z
+    .number()
+    .min(1, 'Numărul de invitați trebuie să fie cel puțin 1'),
   message: z.string().optional(),
 })
 
@@ -39,9 +49,14 @@ export default function Contact({ data }: ContactProps) {
     reset,
   } = useForm<BookingForm>({
     resolver: zodResolver(bookingSchema),
+    mode: 'onTouched',
   })
 
   const onSubmit = async (formData: BookingForm) => {
+    // Citim valoarea brută din input-ul de nume (fără nicio validare sau restricție)
+    const nameInput = document.getElementById('name') as HTMLInputElement | null
+    const name = nameInput?.value ?? ''
+
     setIsSubmitting(true)
     setSubmitStatus('idle')
 
@@ -51,7 +66,10 @@ export default function Contact({ data }: ContactProps) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          name,
+        }),
       })
 
       if (!response.ok) {
@@ -164,55 +182,75 @@ export default function Contact({ data }: ContactProps) {
                 Solicită o rezervare
               </h3>
 
-              <div className="space-y-4">
-                {/* Name */}
+              <div className="space-y-5">
+                {/* Name - input clasic, fără nicio validare sau restricție în frontend */}
                 <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                    Nume complet *
+                  <label htmlFor="name" className="block text-sm font-semibold text-gray-700 mb-2">
+                    Nume complet <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     id="name"
-                    {...register('name')}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
-                    placeholder="Ion Popescu"
+                    name="name"
+                    autoComplete="name"
+                    className="w-full px-4 py-3 border rounded-lg transition-all duration-300 border-gray-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    placeholder="Ana Maria Popescu"
                   />
-                  {errors.name && (
-                    <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>
-                  )}
                 </div>
 
                 {/* Email & Phone */}
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                      Email *
+                    <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
+                      Email <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="email"
                       id="email"
                       {...register('email')}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                      className={`w-full px-4 py-3 border rounded-lg transition-all duration-300 ${
+                        errors.email 
+                          ? 'border-red-500 bg-red-50 focus:ring-2 focus:ring-red-500 focus:border-red-500' 
+                          : 'border-gray-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
+                      }`}
                       placeholder="ion@email.ro"
                     />
                     {errors.email && (
-                      <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex items-center gap-1 mt-2 text-red-600 text-sm"
+                      >
+                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                        <span>{errors.email.message}</span>
+                      </motion.div>
                     )}
                   </div>
 
                   <div>
-                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                      Telefon *
+                    <label htmlFor="phone" className="block text-sm font-semibold text-gray-700 mb-2">
+                      Telefon <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="tel"
                       id="phone"
                       {...register('phone')}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                      className={`w-full px-4 py-3 border rounded-lg transition-all duration-300 ${
+                        errors.phone 
+                          ? 'border-red-500 bg-red-50 focus:ring-2 focus:ring-red-500 focus:border-red-500' 
+                          : 'border-gray-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
+                      }`}
                       placeholder="0712345678"
                     />
                     {errors.phone && (
-                      <p className="text-red-500 text-sm mt-1">{errors.phone.message}</p>
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex items-center gap-1 mt-2 text-red-600 text-sm"
+                      >
+                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                        <span>{errors.phone.message}</span>
+                      </motion.div>
                     )}
                   </div>
                 </div>
@@ -220,28 +258,43 @@ export default function Contact({ data }: ContactProps) {
                 {/* Event Date & Type */}
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="eventDate" className="block text-sm font-medium text-gray-700 mb-1">
-                      Data eveniment *
+                    <label htmlFor="eventDate" className="block text-sm font-semibold text-gray-700 mb-2">
+                      Data eveniment <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="date"
                       id="eventDate"
                       {...register('eventDate')}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                      className={`w-full px-4 py-3 border rounded-lg transition-all duration-300 ${
+                        errors.eventDate 
+                          ? 'border-red-500 bg-red-50 focus:ring-2 focus:ring-red-500 focus:border-red-500' 
+                          : 'border-gray-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
+                      }`}
                     />
                     {errors.eventDate && (
-                      <p className="text-red-500 text-sm mt-1">{errors.eventDate.message}</p>
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex items-center gap-1 mt-2 text-red-600 text-sm"
+                      >
+                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                        <span>{errors.eventDate.message}</span>
+                      </motion.div>
                     )}
                   </div>
 
                   <div>
-                    <label htmlFor="eventType" className="block text-sm font-medium text-gray-700 mb-1">
-                      Tip eveniment *
+                    <label htmlFor="eventType" className="block text-sm font-semibold text-gray-700 mb-2">
+                      Tip eveniment <span className="text-red-500">*</span>
                     </label>
                     <select
                       id="eventType"
                       {...register('eventType')}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                      className={`w-full px-4 py-3 border rounded-lg transition-all duration-300 ${
+                        errors.eventType 
+                          ? 'border-red-500 bg-red-50 focus:ring-2 focus:ring-red-500 focus:border-red-500' 
+                          : 'border-gray-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
+                      }`}
                     >
                       <option value="">Selectează</option>
                       <option value="petreceri-copii">Petreceri de copii</option>
@@ -250,36 +303,57 @@ export default function Contact({ data }: ContactProps) {
                       <option value="aniversare">Petreceri aniversare</option>
                     </select>
                     {errors.eventType && (
-                      <p className="text-red-500 text-sm mt-1">{errors.eventType.message}</p>
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex items-center gap-1 mt-2 text-red-600 text-sm"
+                      >
+                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                        <span>{errors.eventType.message}</span>
+                      </motion.div>
                     )}
                   </div>
                 </div>
 
                 {/* Guest Count */}
                 <div>
-                  <label htmlFor="guestCount" className="block text-sm font-medium text-gray-700 mb-1">
-                    Număr invitați
+                  <label htmlFor="guestCount" className="block text-sm font-semibold text-gray-700 mb-2">
+                    Număr invitați <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="number"
                     id="guestCount"
                     {...register('guestCount', { valueAsNumber: true })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                    className={`w-full px-4 py-3 border rounded-lg transition-all duration-300 ${
+                      errors.guestCount 
+                        ? 'border-red-500 bg-red-50 focus:ring-2 focus:ring-red-500 focus:border-red-500' 
+                        : 'border-gray-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
+                    }`}
                     placeholder="50"
                     min="1"
                   />
+                  {errors.guestCount && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex items-center gap-1 mt-2 text-red-600 text-sm"
+                    >
+                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                      <span>{errors.guestCount.message}</span>
+                    </motion.div>
+                  )}
                 </div>
 
                 {/* Message */}
                 <div>
-                  <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">
-                    Mesaj (opțional)
+                  <label htmlFor="message" className="block text-sm font-semibold text-gray-700 mb-2">
+                    Mesaj <span className="text-gray-400 font-normal">(opțional)</span>
                   </label>
                   <textarea
                     id="message"
                     {...register('message')}
                     rows={4}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all resize-none"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-300 resize-none"
                     placeholder="Detalii suplimentare despre eveniment..."
                   />
                 </div>
