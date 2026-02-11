@@ -704,6 +704,7 @@ export default function AdminPanel() {
     { id: 'events', label: 'Evenimente Tematice', icon: Calendar },
     { id: 'gallery', label: 'Galerie', icon: Image },
     { id: 'faq', label: 'Întrebări Frecvente', icon: FileText },
+    { id: 'bookings', label: 'Rezervări', icon: Calendar },
   ]
 
   const handleDeleteAboutImage = async () => {
@@ -1266,6 +1267,10 @@ export default function AdminPanel() {
                 {activeTab === 'faq' && (
                   <FAQManager />
                 )}
+
+                {activeTab === 'bookings' && (
+                  <BookingsManager />
+                )}
                   </>
                 )}
               </div>
@@ -1581,6 +1586,122 @@ function GalleryManager() {
     </div>
   )
 }
+
+// ---------------------------------------------------------------------------
+// Rezervări (Bookings) - doar listare din Payload
+// ---------------------------------------------------------------------------
+
+type BookingItem = {
+  id: string
+  name: string
+  email: string
+  phone: string
+  eventDate: string
+  eventType: string
+  guestCount?: number
+  message?: string
+  status?: string
+  createdAt?: string
+}
+
+function formatDisplayDate(date: string) {
+  if (!date) return ''
+  const d = new Date(date)
+  if (Number.isNaN(d.getTime())) return date
+  return d.toLocaleDateString('ro-RO', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })
+}
+
+const BookingsManager: React.FC = () => {
+  const [bookings, setBookings] = useState<BookingItem[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const loadBookings = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        const res = await fetch('/api/bookings-admin')
+        if (!res.ok) {
+          throw new Error(`Eroare la încărcarea rezervărilor (${res.status})`)
+        }
+        const data = await res.json()
+        setBookings(Array.isArray(data) ? data : [])
+      } catch (e) {
+        console.error('Error loading bookings:', e)
+        setError('Nu am putut încărca rezervările. Încearcă din nou mai târziu.')
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadBookings()
+  }, [])
+
+  return (
+    <div className="space-y-6">
+      <div className="mb-6">
+        <h3 className="text-xl font-bold text-gray-900 mb-2">Rezervări din formularul de contact</h3>
+        <p className="text-sm text-gray-600">
+          Aici vezi toate mesajele trimise prin formularul de contact de pe pagina principală.
+        </p>
+      </div>
+
+      {loading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      )}
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+          {error}
+        </div>
+      )}
+
+      {!loading && !error && bookings.length === 0 && (
+        <p className="text-sm text-gray-500">Nu există încă nicio rezervare.</p>
+      )}
+
+      <div className="space-y-4">
+        {bookings.map((booking) => (
+          <div key={booking.id} className="border border-gray-200 rounded-lg p-4 space-y-2">
+            <div className="flex justify-between items-start gap-2">
+              <div>
+                <p className="text-sm font-semibold text-gray-900">
+                  {booking.name} <span className="text-xs text-gray-500">({booking.email})</span>
+                </p>
+                <p className="text-xs text-gray-500">
+                  Tel: {booking.phone} · Data: {formatDisplayDate(booking.eventDate)} · Tip:{' '}
+                  {booking.eventType || '-'} · Invitați: {booking.guestCount ?? '-'}
+                </p>
+              </div>
+              <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-700">
+                {booking.status === 'confirmed'
+                  ? 'Confirmată'
+                  : booking.status === 'cancelled'
+                  ? 'Anulată'
+                  : 'Nouă'}
+              </span>
+            </div>
+            {booking.message && booking.message.trim().length > 0 && (
+              <p className="text-sm text-gray-700 whitespace-pre-wrap">{booking.message}</p>
+            )}
+            {booking.createdAt && (
+              <p className="text-xs text-gray-400">
+                Creată la {formatDisplayDate(booking.createdAt)}
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 
 
 // FAQ Manager Component
