@@ -8,6 +8,9 @@ import * as z from 'zod'
 import { Mail, Phone, MapPin, Send, CheckCircle, AlertCircle } from 'lucide-react'
 
 const bookingSchema = z.object({
+  name: z
+    .string()
+    .min(1, 'Numele este obligatoriu'),
   email: z
     .string()
     .min(1, 'Email-ul este obligatoriu')
@@ -23,7 +26,7 @@ const bookingSchema = z.object({
   eventType: z.string().min(1, 'Selectați tipul evenimentului'),
   guestCount: z
     .number()
-    .min(1, 'Numărul de invitați trebuie să fie cel puțin 1'),
+    .min(1, 'Numărul de invitați este obligatoriu'),
   message: z.string().optional(),
 })
 
@@ -53,10 +56,6 @@ export default function Contact({ data }: ContactProps) {
   })
 
   const onSubmit = async (formData: BookingForm) => {
-    // Citim valoarea brută din input-ul de nume (fără nicio validare sau restricție)
-    const nameInput = document.getElementById('name') as HTMLInputElement | null
-    const name = nameInput?.value ?? ''
-
     setIsSubmitting(true)
     setSubmitStatus('idle')
 
@@ -66,10 +65,7 @@ export default function Contact({ data }: ContactProps) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...formData,
-          name,
-        }),
+        body: JSON.stringify(formData),
       })
 
       if (!response.ok) {
@@ -183,7 +179,7 @@ export default function Contact({ data }: ContactProps) {
               </h3>
 
               <div className="space-y-5">
-                {/* Name - input clasic, fără nicio validare sau restricție în frontend */}
+                {/* Name - validare React Hook Form (required) */}
                 <div>
                   <label htmlFor="name" className="block text-sm font-semibold text-gray-700 mb-2">
                     Nume complet <span className="text-red-500">*</span>
@@ -191,11 +187,25 @@ export default function Contact({ data }: ContactProps) {
                   <input
                     type="text"
                     id="name"
-                    name="name"
                     autoComplete="name"
-                    className="w-full px-4 py-3 border rounded-lg transition-all duration-300 border-gray-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    {...register('name')}
+                    className={`w-full px-4 py-3 border rounded-lg transition-all duration-300 ${
+                      errors.name
+                        ? 'border-red-500 bg-red-50 focus:ring-2 focus:ring-red-500 focus:border-red-500'
+                        : 'border-gray-300 focus:ring-2 focus:ring-primary-500 focus:border-primary-500'
+                    }`}
                     placeholder="Ana Maria Popescu"
                   />
+                  {errors.name && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex items-center gap-1 mt-2 text-red-600 text-sm"
+                    >
+                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                      <span>{errors.name.message}</span>
+                    </motion.div>
+                  )}
                 </div>
 
                 {/* Email & Phone */}
@@ -339,7 +349,11 @@ export default function Contact({ data }: ContactProps) {
                       className="flex items-center gap-1 mt-2 text-red-600 text-sm"
                     >
                       <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                      <span>{errors.guestCount.message}</span>
+                      <span>
+                        {errors.guestCount.message === 'Invalid input'
+                          ? 'Numărul de invitați este obligatoriu'
+                          : errors.guestCount.message}
+                      </span>
                     </motion.div>
                   )}
                 </div>
