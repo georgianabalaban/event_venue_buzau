@@ -270,7 +270,21 @@ const mapPayloadToSiteData = (payload?: PayloadPageResponse | null): SiteData =>
 }
 
 export default function AdminPanel() {
-  const [activeTab, setActiveTab] = useState('header')
+  // Citim tab-ul din query string (?tab=bookings) ca să putem deschide direct „Rezervări” din email
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window === 'undefined') return 'header'
+    try {
+      const params = new URLSearchParams(window.location.search)
+      const tabParam = params.get('tab')
+      const allowedTabs = ['header', 'hero', 'about', 'services', 'service-details', 'events', 'gallery', 'faq', 'bookings']
+      if (tabParam && allowedTabs.includes(tabParam)) {
+        return tabParam
+      }
+    } catch {
+      // ignore
+    }
+    return 'header'
+  })
   const [isEditing, setIsEditing] = useState(false)
   const [saved, setSaved] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -1960,6 +1974,7 @@ interface EventItem {
   category: string
   price: number
   availableSpots: number
+  imageUrl?: string
 }
 
 function EventsManager() {
@@ -1972,6 +1987,7 @@ function EventsManager() {
       category: 'party',
       price: 150,
       availableSpots: 50,
+      imageUrl: '',
     },
     {
       id: '2',
@@ -1981,6 +1997,7 @@ function EventsManager() {
       category: 'party',
       price: 250,
       availableSpots: 30,
+      imageUrl: '',
     },
   ]
 
@@ -1992,6 +2009,7 @@ function EventsManager() {
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [saveNotification, setSaveNotification] = useState<{ show: boolean; type: 'success' | 'error'; message: string }>({ show: false, type: 'success', message: '' })
+  const [uploadingEventImage, setUploadingEventImage] = useState(false)
 
   // Form states for new event
   const [newTitle, setNewTitle] = useState('')
@@ -2000,6 +2018,7 @@ function EventsManager() {
   const [newCategory, setNewCategory] = useState('party')
   const [newPrice, setNewPrice] = useState('')
   const [newSpots, setNewSpots] = useState('')
+  const [newImageFile, setNewImageFile] = useState<File | null>(null)
 
   // Show notification helper
   const showNotification = (type: 'success' | 'error', message: string) => {
@@ -2044,7 +2063,8 @@ function EventsManager() {
         const response = await fetch('/api/events')
         if (response.ok) {
           const data = await response.json()
-          const eventsData = data.length > 0 ? data : defaultEvents
+          // Folosim strict ce vine din DB; dacă nu sunt evenimente => listă goală
+          const eventsData = Array.isArray(data) ? data : []
           setEvents(eventsData)
           // Cache to localStorage
           localStorage.setItem('eventsCache', JSON.stringify(eventsData))
@@ -2107,6 +2127,7 @@ function EventsManager() {
             category: editingEvent.category,
             price: editingEvent.price,
             availableSpots: editingEvent.availableSpots,
+            imageUrl: editingEvent.imageUrl,
           }),
         })
         
@@ -2152,6 +2173,93 @@ function EventsManager() {
       showNotification('error', 'Eroare la salvarea în DB!')
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  const handleUpdateEventImage = async (event: EventItem, file: File) => {
+    if (!event) return
+    setUploadingEventImage(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('category', 'events')
+      formData.append('alt', event.title)
+      formData.append('title', event.title)
+
+      const uploadRes = await fetch('/api/gallery/upload', { method: 'POST', body: formData })
+      if (!uploadRes.ok) {
+        showNotification('error', 'Eroare la încărcarea imaginii. Încearcă din nou.')
+        return
+      }
+      const data = await uploadRes.json()
+      const newImageUrl: string | undefined = data.externalUrl || data.url
+      if (!newImageUrl) {
+        showNotification('error', 'Nu am primit un URL valid pentru imagine.')
+        return
+      }
+
+      // Actualizăm imediat în state + localStorage
+      setEvents(prev => {
+        const updated = prev.map(e => e.id === event.id ? { ...e, imageUrl: newImageUrl } : e)
+        localStorage.setItem('eventsCache', JSON.stringify(updated))
+        return updated
+      })
+
+      // Actualizăm și editingEvent pentru preview imediat
+      if (editingEvent && editingEvent.id === event.id) {
+        setEditingEvent({ ...editingEvent, imageUrl: newImageUrl })
+      }
+
+      // Persistăm și în DB (create sau update, similar cu handleSaveEvent)
+      const isMongoId = /^[a-f\d]{24}$/i.test(event.id)
+      if (!isMongoId) {
+        // Eveniment local → creare în DB
+        const res = await fetch('/api/events', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: event.title,
+            description: event.description,
+            date: event.date,
+            category: event.category,
+            price: event.price,
+            availableSpots: event.availableSpots,
+            imageUrl: newImageUrl,
+          }),
+        })
+        if (res.ok) {
+          const savedEvent = await res.json()
+          setEvents(prev => {
+            const updated = prev.map(e => e.id === event.id ? savedEvent : e)
+            localStorage.setItem('eventsCache', JSON.stringify(updated))
+            return updated
+          })
+          showNotification('success', 'Imagine eveniment actualizată cu succes!')
+        } else {
+          const err = await res.json().catch(() => ({}))
+          console.error('Error saving event image (create):', err)
+          showNotification('error', 'Imagine încărcată local, dar salvarea în DB a eșuat.')
+        }
+      } else {
+        // Eveniment existent în DB → update
+        const res = await fetch('/api/events', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...event, imageUrl: newImageUrl }),
+        })
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}))
+          console.error('Error saving event image (update):', err)
+          showNotification('error', 'Imagine actualizată local, dar salvarea în DB a eșuat.')
+        } else {
+          showNotification('success', 'Imagine eveniment actualizată cu succes!')
+        }
+      }
+    } catch (err) {
+      console.error('Error uploading event image:', err)
+      showNotification('error', 'Eroare la încărcarea imaginii. Încearcă din nou.')
+    } finally {
+      setUploadingEventImage(false)
     }
   }
 
@@ -2228,6 +2336,26 @@ function EventsManager() {
     setIsSaving(true)
     
     try {
+      let imageUrl: string | undefined
+
+      // Dacă există imagine selectată, o încărcăm mai întâi în S3
+      if (newImageFile) {
+        const form = new FormData()
+        form.append('file', newImageFile)
+        form.append('category', 'events')
+        form.append('alt', newTitle.trim() || 'Imagine eveniment')
+        form.append('title', newTitle.trim() || 'Eveniment')
+
+        const uploadRes = await fetch('/api/gallery/upload', { method: 'POST', body: form })
+        if (!uploadRes.ok) {
+          setEventError('Eroare la încărcarea imaginii. Te rog încearcă din nou.')
+          setIsSaving(false)
+          return
+        }
+        const uploadData = await uploadRes.json()
+        imageUrl = uploadData.externalUrl || uploadData.url
+      }
+
       const response = await fetch('/api/events', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2238,6 +2366,7 @@ function EventsManager() {
           category: newCategory,
           price: price,
           availableSpots: spots,
+          imageUrl,
         }),
       })
 
@@ -2256,6 +2385,7 @@ function EventsManager() {
         setNewCategory('party')
         setNewPrice('')
         setNewSpots('')
+        setNewImageFile(null)
         setEventError('')
         setIsAddingNew(false)
         
@@ -2438,6 +2568,55 @@ function EventsManager() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm disabled:bg-gray-50 disabled:cursor-not-allowed"
                 />
               </div>
+              
+              {/* Imagine eveniment (upload cu preview) */}
+              <div className="md:col-span-2">
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Imagine eveniment:
+                </label>
+                <div className="flex items-center gap-4">
+                  <div className="w-32 h-20 rounded-md overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center text-[11px] text-gray-400">
+                    {displayEvent.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={displayEvent.imageUrl}
+                        alt={displayEvent.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      'Fără imagine'
+                    )}
+                  </div>
+                  <label className={`cursor-pointer inline-flex items-center px-3 py-1.5 rounded-md text-xs font-medium shadow-sm ${
+                    !isEditing || uploadingEventImage
+                      ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                      : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 mr-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 5v14" />
+                      <path d="M5 12h14" />
+                    </svg>
+                    {uploadingEventImage ? 'Se încarcă...' : (displayEvent.imageUrl ? 'Schimbă imaginea' : 'Adaugă imagine')}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={!isEditing || uploadingEventImage}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) {
+                          handleUpdateEventImage(displayEvent, file)
+                          // resetăm valoarea inputului pentru a permite același fișier din nou
+                          e.target.value = ''
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+                <p className="mt-1 text-[11px] text-gray-500">
+                  Imaginea este utilizată în cardul de eveniment de pe pagina principală.
+                </p>
+              </div>
             </div>
           )
         })}
@@ -2534,6 +2713,49 @@ function EventsManager() {
                   placeholder="50"
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
+              </div>
+              
+              {/* Imagine eveniment (URL) */}
+              <div className="md:col-span-2">
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Imagine eveniment:
+                </label>
+                <div className="flex items-center gap-4">
+                  <div className="w-32 h-20 rounded-md overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center text-[11px] text-gray-400">
+                    {newImageFile ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={URL.createObjectURL(newImageFile)}
+                        alt={newTitle || 'Imagine eveniment'}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      'Fără imagine'
+                    )}
+                  </div>
+                  <label className={`cursor-pointer inline-flex items-center px-3 py-1.5 rounded-md text-xs font-medium shadow-sm ${
+                    isSaving ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 mr-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 5v14" />
+                      <path d="M5 12h14" />
+                    </svg>
+                    {newImageFile ? 'Schimbă imaginea' : 'Adaugă imagine'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={isSaving}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) {
+                          setNewImageFile(file)
+                          setEventError('')
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
               </div>
             </div>
 

@@ -21,6 +21,7 @@ export async function GET() {
       category: event.category,
       price: event.price,
       availableSpots: event.availableSpots,
+      imageUrl: event.imageUrl,
     }))
 
     return NextResponse.json(formattedEvents)
@@ -48,6 +49,7 @@ export async function POST(request: Request) {
         category: body.category,
         price: body.price,
         availableSpots: body.availableSpots,
+        imageUrl: body.imageUrl,
       },
     })
 
@@ -59,6 +61,7 @@ export async function POST(request: Request) {
       category: newEvent.category,
       price: newEvent.price,
       availableSpots: newEvent.availableSpots,
+      imageUrl: newEvent.imageUrl,
     })
   } catch (error) {
     console.error('Error creating event:', error)
@@ -90,6 +93,7 @@ export async function PUT(request: Request) {
       category: updatedEvent.category,
       price: updatedEvent.price,
       availableSpots: updatedEvent.availableSpots,
+      imageUrl: updatedEvent.imageUrl,
     })
   } catch (error) {
     console.error('Error updating event:', error)

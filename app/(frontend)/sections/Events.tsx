@@ -13,39 +13,17 @@ interface Event {
   category: string
   price?: number
   availableSpots?: number
-  image?: {
-    url: string
-    alt?: string
-  }
+  imageUrl?: string
 }
 
 interface EventsProps {
   events?: Event[]
 }
 
-const defaultEvents: Event[] = [
-  {
-    id: '1',
-    title: 'Petrecere de Crăciun',
-    description: 'Sărbătorește Crăciunul într-o atmosferă magică',
-    date: '2025-12-20',
-    category: 'party',
-    price: 150,
-    availableSpots: 50,
-  },
-  {
-    id: '2',
-    title: 'Revelion 2026',
-    description: 'Întâmpină Anul Nou cu stil',
-    date: '2025-12-31',
-    category: 'party',
-    price: 250,
-    availableSpots: 30,
-  },
-]
+const defaultEvents: Event[] = [] // nu mai afișăm evenimente hardcodate; totul vine din DB/admin
 
 export default function Events({ events }: EventsProps) {
-  const [displayEvents, setDisplayEvents] = useState<Event[]>(defaultEvents)
+  const [displayEvents, setDisplayEvents] = useState<Event[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   // Load from API (from database) with localStorage fallback
@@ -57,7 +35,7 @@ export default function Events({ events }: EventsProps) {
         if (cached) {
           try {
             const cachedEvents = JSON.parse(cached)
-            setDisplayEvents(cachedEvents.length > 0 ? cachedEvents : defaultEvents)
+            setDisplayEvents(Array.isArray(cachedEvents) ? cachedEvents : [])
           } catch (e) {
             console.error('Error parsing cached events:', e)
           }
@@ -67,12 +45,12 @@ export default function Events({ events }: EventsProps) {
         const response = await fetch('/api/events')
         if (response.ok) {
           const data = await response.json()
-          setDisplayEvents(data.length > 0 ? data : defaultEvents)
+          setDisplayEvents(Array.isArray(data) ? data : [])
         } else if (events && events.length > 0) {
           setDisplayEvents(events)
         } else if (!cached) {
-          // No cache, no API, use default
-          setDisplayEvents(defaultEvents)
+          // No cache, no API, afișăm listă goală
+          setDisplayEvents([])
         }
       } catch (error) {
         console.error('Error loading events from API:', error)
@@ -126,29 +104,43 @@ export default function Events({ events }: EventsProps) {
           <div className="flex justify-center items-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
           </div>
+        ) : displayEvents.length === 0 ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="max-w-xl text-center bg-gray-50 border border-dashed border-gray-200 rounded-2xl px-6 py-8 shadow-sm">
+              <p className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 mb-2">
+                Nu avem încă evenimente tematice programate.
+              </p>
+              <p className="text-sm sm:text-base text-gray-600">
+                Pregătim surprize frumoase pentru tine. Rămâi aproape – în curând vom anunța noi evenimente speciale.
+              </p>
+            </div>
+          </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {displayEvents.map((event, index) => (
-            <motion.div
-              key={event.id}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1, duration: 0.6 }}
-              viewport={{ once: true }}
-              className="group relative bg-white border border-gray-200 rounded-2xl overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2"
-            >
-              {/* Image */}
-              <div className="relative h-48 overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary-500 to-secondary-500" />
-                <div className="absolute inset-0 flex items-center justify-center text-white text-lg font-semibold">
-                  {event.title}
+              <motion.div
+                key={event.id}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1, duration: 0.6 }}
+                viewport={{ once: true }}
+                className="group relative bg-white border border-gray-200 rounded-2xl overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2"
+              >
+                {/* Image area */}
+                <div className="relative h-48 sm:h-56 md:h-64 overflow-hidden bg-gray-100">
+                  {event.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={event.imageUrl}
+                      alt={event.title}
+                      className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center text-white text-lg font-semibold px-4 text-center">
+                      {event.title}
+                    </div>
+                  )}
                 </div>
-                
-                {/* Category badge */}
-                <div className="absolute top-4 right-4 px-3 py-1 bg-white/90 backdrop-blur-sm rounded-full text-sm font-medium text-gray-900">
-                  {categoryLabels[event.category] || event.category}
-                </div>
-              </div>
 
               {/* Content */}
               <div className="p-4 sm:p-5 md:p-6">

@@ -119,7 +119,7 @@ export async function POST(req: NextRequest) {
             ${message ? `<p><strong>Mesaj:</strong> ${message}</p>` : ''}
           </div>
           
-          <p><a href="${process.env.NEXT_PUBLIC_SERVER_URL}/admin/collections/bookings/${booking.id}" 
+          <p><a href="${process.env.NEXT_PUBLIC_SERVER_URL}/admin?tab=bookings" 
              style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
             Vezi în Admin Panel
           </a></p>

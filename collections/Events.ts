@@ -59,5 +59,14 @@ export const Events: CollectionConfig = {
       label: 'Locuri disponibile',
       min: 0,
     },
+    {
+      name: 'imageUrl',
+      type: 'text',
+      required: false,
+      label: 'Imagine eveniment (URL complet)',
+      admin: {
+        description: 'Link complet către imagine (ex: https://event-venue-buzau.s3....)',
+      },
+    },
   ],
 }
