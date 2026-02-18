@@ -270,21 +270,8 @@ const mapPayloadToSiteData = (payload?: PayloadPageResponse | null): SiteData =>
 }
 
 export default function AdminPanel() {
-  // Citim tab-ul din query string (?tab=bookings) ca să putem deschide direct „Rezervări” din email
-  const [activeTab, setActiveTab] = useState(() => {
-    if (typeof window === 'undefined') return 'header'
-    try {
-      const params = new URLSearchParams(window.location.search)
-      const tabParam = params.get('tab')
-      const allowedTabs = ['header', 'hero', 'about', 'services', 'service-details', 'events', 'gallery', 'faq', 'bookings']
-      if (tabParam && allowedTabs.includes(tabParam)) {
-        return tabParam
-      }
-    } catch {
-      // ignore
-    }
-    return 'header'
-  })
+  // Tab activ în admin (inițial „Header”; îl corectăm pe client în useEffect pe baza ?tab=...)
+  const [activeTab, setActiveTab] = useState('header')
   const [isEditing, setIsEditing] = useState(false)
   const [saved, setSaved] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -308,6 +295,20 @@ export default function AdminPanel() {
   const [heroDragActive, setHeroDragActive] = useState(false)
   const [heroPendingFiles, setHeroPendingFiles] = useState<File[]>([])
   const [heroIsUploading, setHeroIsUploading] = useState(false)
+
+  // Aliniem tab-ul activ cu query string-ul (?tab=bookings) DOAR pe client, după hidratare
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search)
+      const tabParam = params.get('tab')
+      const allowedTabs = ['header', 'hero', 'about', 'services', 'service-details', 'events', 'gallery', 'faq', 'bookings']
+      if (tabParam && allowedTabs.includes(tabParam) && tabParam !== activeTab) {
+        setActiveTab(tabParam)
+      }
+    } catch {
+      // ignorăm erorile de acces la window (nu ar trebui să apară în client)
+    }
+  }, [activeTab])
 
   const updateServicesTitle = (title: string) => {
     const next = {
